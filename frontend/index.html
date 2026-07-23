@@ -1232,5 +1232,37 @@ window.addEventListener('unhandledrejection',function(e){
   </div>
 </div>
 
+
+<div class="modal-overlay" id="file-edit-modal">
+  <div class="modal" style="width:440px">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:20px" id="file-edit-icon">📎</span>
+        <h3 id="file-edit-title-display">Edit File</h3>
+      </div>
+      <button class="close-btn" onclick="closeModal('file-edit-modal')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row"><label>File Name</label><input type="text" id="fe-title" placeholder="filename.ext" autocomplete="off"></div>
+      <div class="form-row">
+        <label style="display:flex;justify-content:space-between;align-items:center">
+          Category
+          <button type="button" class="btn-link" onclick="openQuickAddCat()" style="font-size:11px;font-weight:600;color:var(--accent);background:none;border:none;cursor:pointer;padding:0">+ New</button>
+        </label>
+        <div id="fe-cat-chips" class="cat-chip-picker"></div>
+      </div>
+      <div class="form-row"><label>Notes</label><textarea id="fe-notes" placeholder="Any notes about this file..." style="min-height:60px"></textarea></div>
+      <div class="form-row"><label class="form-checkbox"><input type="checkbox" id="fe-fav"> Mark as favorite</label></div>
+      <div style="margin-top:8px;padding:10px 12px;background:var(--surface2);border-radius:var(--radius);font-size:11px;color:var(--text-3)">
+        <span id="fe-meta"></span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('file-edit-modal')">Cancel</button>
+      <button class="btn-save" onclick="saveFileEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

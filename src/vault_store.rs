@@ -283,21 +283,38 @@ pub fn update_entry(token: &str, entry_id: &str, data: &Value) -> anyhow::Result
                 history.truncate(5);
             }
             let new_title = data.get("title").and_then(Value::as_str).unwrap_or(old["title"].as_str().unwrap_or(""));
-            let updated = serde_json::json!({
-                "id":               entry_id,
-                "title":            new_title,
-                "username":         data.get("username").and_then(Value::as_str).unwrap_or(old["username"].as_str().unwrap_or("")),
-                "password":         new_pw,
-                "url":              data.get("url").and_then(Value::as_str).unwrap_or(old["url"].as_str().unwrap_or("")),
-                "notes":            data.get("notes").and_then(Value::as_str).unwrap_or(old["notes"].as_str().unwrap_or("")),
-                "category":         data.get("category").and_then(Value::as_str).unwrap_or(old["category"].as_str().unwrap_or("login")),
-                "tags":             data.get("tags").cloned().unwrap_or_else(|| old["tags"].clone()),
-                "favorite":         data.get("favorite").and_then(Value::as_bool).unwrap_or(old["favorite"].as_bool().unwrap_or(false)),
-                "totp_secret":      data.get("totp_secret").and_then(Value::as_str).unwrap_or(old.get("totp_secret").and_then(Value::as_str).unwrap_or("")),
-                "password_history": history,
-                "created_at":       old["created_at"].clone(),
-                "updated_at":       now_secs(),
-            });
+            // File entries: preserve encrypted file data, only update metadata
+            let updated = if old["entry_type"].as_str() == Some("file") {
+                serde_json::json!({
+                    "id":         entry_id,
+                    "entry_type": "file",
+                    "title":      new_title,
+                    "file_data":  old["file_data"].clone(),
+                    "file_size":  old["file_size"].clone(),
+                    "file_mime":  old["file_mime"].clone(),
+                    "category":   data.get("category").and_then(Value::as_str).unwrap_or(old["category"].as_str().unwrap_or("other")),
+                    "notes":      data.get("notes").and_then(Value::as_str).unwrap_or(old["notes"].as_str().unwrap_or("")),
+                    "favorite":   data.get("favorite").and_then(Value::as_bool).unwrap_or(old["favorite"].as_bool().unwrap_or(false)),
+                    "created_at": old["created_at"].clone(),
+                    "updated_at": now_secs(),
+                })
+            } else {
+                serde_json::json!({
+                    "id":               entry_id,
+                    "title":            new_title,
+                    "username":         data.get("username").and_then(Value::as_str).unwrap_or(old["username"].as_str().unwrap_or("")),
+                    "password":         new_pw,
+                    "url":              data.get("url").and_then(Value::as_str).unwrap_or(old["url"].as_str().unwrap_or("")),
+                    "notes":            data.get("notes").and_then(Value::as_str).unwrap_or(old["notes"].as_str().unwrap_or("")),
+                    "category":         data.get("category").and_then(Value::as_str).unwrap_or(old["category"].as_str().unwrap_or("login")),
+                    "tags":             data.get("tags").cloned().unwrap_or_else(|| old["tags"].clone()),
+                    "favorite":         data.get("favorite").and_then(Value::as_bool).unwrap_or(old["favorite"].as_bool().unwrap_or(false)),
+                    "totp_secret":      data.get("totp_secret").and_then(Value::as_str).unwrap_or(old.get("totp_secret").and_then(Value::as_str).unwrap_or("")),
+                    "password_history": history,
+                    "created_at":       old["created_at"].clone(),
+                    "updated_at":       now_secs(),
+                })
+            };
             s.log("update_entry", new_title);
             s.entries[pos] = updated.clone();
             result = Some(updated);

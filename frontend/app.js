@@ -966,6 +966,10 @@ function renderEntries(){
     if(e.entry_type==='file'){
       card.classList.add('file-entry');
       card.onclick=null;
+      // Fix action buttons: edit opens file editor, hide duplicate
+      const [editBtn,dupBtn]=card.querySelectorAll('.entry-card-actions .entry-action-btn');
+      if(editBtn) editBtn.onclick=ev=>{ev.stopPropagation();openFileEdit(e.id);};
+      if(dupBtn)  dupBtn.style.display='none';
       const av2=card.querySelector('.entry-avatar');
       if(av2) av2.textContent=fileIcon(e.file_mime||'');
       const sz=document.createElement('div'); sz.className='file-size-badge';
@@ -1176,6 +1180,7 @@ function deleteSel(){ if(S.selectedId){ const e=S.entries.find(x=>x.id===S.selec
 
 function openEditEntry(id){
   const e=S.entries.find(x=>x.id===id); if(!e) return;
+  if(e.entry_type==='file'){ openFileEdit(id); return; }
   S.editId=id;
   document.getElementById('modal-title').textContent='Edit Entry';
   document.getElementById('f-title').value=e.title||'';
@@ -2956,4 +2961,73 @@ async function onTopbarFileUpload(event) {
     toast(uploaded === 1 ? 'File uploaded' : uploaded + ' files uploaded', 'success');
     await loadEntries();
   }
+}
+
+// ─── file entry editing ────────────────────────────────────────────────────────
+function openFileEdit(id) {
+  const e = S.entries.find(x => x.id === id); if (!e) return;
+  S.editId = id;
+  // Header
+  const icon = document.getElementById('file-edit-icon');
+  const titleDisp = document.getElementById('file-edit-title-display');
+  if (icon) icon.textContent = fileIcon(e.file_mime || '');
+  if (titleDisp) titleDisp.textContent = 'Edit File';
+  // Fields
+  document.getElementById('fe-title').value = e.title || '';
+  document.getElementById('fe-notes').value = e.notes || '';
+  document.getElementById('fe-fav').checked = !!e.favorite;
+  // Meta info
+  const meta = document.getElementById('fe-meta');
+  if (meta) meta.textContent = [
+    fmtSize(e.file_size || 0),
+    e.file_mime || '',
+    e.created_at ? ('Added ' + fmtDate(e.created_at)) : ''
+  ].filter(Boolean).join(' · ');
+  // Category chips (reuse existing chip logic with a different container id)
+  const cats = e.categories && e.categories.length ? e.categories : (e.category ? [e.category] : ['other']);
+  renderCatChipsInto('fe-cat-chips', cats);
+  openModal('file-edit-modal');
+  setTimeout(() => document.getElementById('fe-title')?.focus(), 100);
+}
+
+async function saveFileEdit() {
+  const title = document.getElementById('fe-title').value.trim();
+  if (!title) { toast('File name required', 'error'); return; }
+  const notes   = document.getElementById('fe-notes').value;
+  const fav     = document.getElementById('fe-fav').checked;
+  // Get selected categories from fe-cat-chips
+  const chips   = document.querySelectorAll('#fe-cat-chips .cat-chip.selected');
+  const cats    = chips.length ? Array.from(chips).map(c => c.dataset.id) : ['other'];
+  const cat     = cats[0] || 'other';
+  try {
+    const tok = getToken();
+    const r = await fetch(`/api/entries/${S.editId}`, {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json','X-Session-Token': tok},
+      body: JSON.stringify({ title, notes, category: cat, categories: cats, favorite: fav })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Save failed');
+    closeModal('file-edit-modal');
+    toast('File updated', 'success');
+    await loadEntries();
+  } catch(e) { toast('Save failed: ' + e.message, 'error'); }
+}
+
+// Render category chips into an arbitrary container id
+function renderCatChipsInto(containerId, selectedCats) {
+  const container = document.getElementById(containerId); if (!container) return;
+  container.innerHTML = '';
+  S.categories.forEach(cat => {
+    const chip = document.createElement('span');
+    chip.className = 'cat-chip' + (selectedCats.includes(cat.id) ? ' selected' : '');
+    chip.dataset.id = cat.id;
+    if (selectedCats.includes(cat.id)) chip.style.background = cat.color || '#8b5cf6';
+    chip.innerHTML = `<span>${cat.icon||'📁'}</span><span>${cat.label}</span>`;
+    chip.onclick = () => {
+      chip.classList.toggle('selected');
+      chip.style.background = chip.classList.contains('selected') ? (cat.color||'#8b5cf6') : '';
+    };
+    container.appendChild(chip);
+  });
 }
