@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Secure Vault</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0d14;--surface:#13131d;--surface2:#1a1a28;--surface3:#232336;
+  --border:#2a2a40;--accent:#8b5cf6;--accent-glow:rgba(139,92,246,0.25);
+  --green:#10b981;--yellow:#fbbf24;--red:#f43f5e;--cyan:#22d3ee;
+  --text:#e2e8f0;--text-2:#94a3b8;--text-3:#64748b;
+  --radius:10px;--radius-lg:16px;--shadow:0 4px 24px rgba(0,0,0,0.5);
+  --tr:150ms cubic-bezier(0.4,0,0.2,1);
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
+input,textarea,button,select{font:inherit;color:inherit}
+button{cursor:pointer;border:none;background:none}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+#app{height:100vh;display:flex}
+#unlock-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 0%,rgba(139,92,246,.12) 0%,var(--bg) 60%);z-index:100}
+.unlock-card{width:420px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:40px;box-shadow:var(--shadow),0 0 60px rgba(139,92,246,.08)}
+.unlock-logo{text-align:center;margin-bottom:24px}
+.logo-icon{width:56px;height:56px;background:linear-gradient(135deg,var(--accent),#6366f1);border-radius:16px;display:inline-flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:12px;box-shadow:0 8px 32px var(--accent-glow)}
+.unlock-logo h1{font-size:22px;font-weight:700;letter-spacing:-.3px}
+.unlock-logo p{color:var(--text-2);font-size:13px;margin-top:4px}
+.vault-tabs{display:flex;gap:8px;margin-bottom:20px}
+.vault-tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:all var(--tr);font-size:12px;font-weight:600;color:var(--text-2)}
+.vault-tab:hover{border-color:var(--text-3);color:var(--text)}
+.vault-tab.active{border-color:var(--accent);background:var(--accent-glow);color:var(--accent)}
+.vault-tab-icon{font-size:20px}
+.unlock-card label{display:block;font-size:12px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.input-wrap{position:relative}
+.input-wrap input{width:100%;padding:10px 40px 10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);transition:border-color var(--tr),box-shadow var(--tr);outline:none}
+.input-wrap input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.eye-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--text-3);font-size:16px;line-height:1;padding:2px;border-radius:4px}
+.eye-btn:hover{color:var(--text)}
+.btn-primary{width:100%;padding:11px;background:linear-gradient(135deg,var(--accent),#6366f1);color:#fff;font-weight:600;font-size:14px;border-radius:var(--radius);margin-top:20px;transition:opacity var(--tr),transform var(--tr);box-shadow:0 4px 16px var(--accent-glow)}
+.btn-primary:hover{opacity:.92;transform:translateY(-1px)}.btn-primary:active{transform:translateY(0)}.btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.unlock-error{color:var(--red);font-size:12px;margin-top:8px;text-align:center;min-height:16px}
+.shared-notice{background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.25);border-radius:var(--radius);padding:14px 16px;font-size:13px;color:var(--yellow);text-align:center;line-height:1.6}
+.shared-notice a{color:var(--accent);cursor:pointer;text-decoration:underline}
+#sidebar{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:16px 0;overflow:hidden}
+.sidebar-header{display:flex;align-items:center;gap:10px;padding:0 16px 16px;border-bottom:1px solid var(--border);margin-bottom:8px}
+.sidebar-logo{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),#6366f1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.sidebar-title{font-weight:700;font-size:15px;letter-spacing:-.2px}
+.sidebar-section-label{font-size:10px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;padding:8px 16px 4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 16px;border-radius:8px;margin:0 8px;cursor:pointer;color:var(--text-2);transition:background var(--tr),color var(--tr);font-size:13px;font-weight:500;user-select:none}
+.nav-item:hover{background:var(--surface2);color:var(--text)}.nav-item.active{background:var(--accent-glow);color:var(--accent)}
+.nav-icon{width:18px;text-align:center;font-size:15px;flex-shrink:0}
+.nav-count{margin-left:auto;font-size:11px;background:var(--surface3);color:var(--text-3);padding:1px 6px;border-radius:10px}
+.nav-item.active .nav-count{background:rgba(139,92,246,.2);color:var(--accent)}
+.vault-status{font-size:12px;margin-left:auto}
+.sidebar-spacer{flex:1}.sidebar-footer{padding:8px;border-top:1px solid var(--border);margin-top:8px}
+.lock-btn:hover{background:rgba(244,63,94,.1)!important;color:var(--red)!important}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.topbar{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
+.search-wrap{flex:1;position:relative;max-width:400px}
+.search-wrap input{width:100%;padding:8px 12px 8px 36px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);outline:none;transition:border-color var(--tr),box-shadow var(--tr)}
+.search-wrap input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text-3);font-size:14px}
+.topbar-right{display:flex;gap:8px;margin-left:auto}
+.btn-icon{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:16px;color:var(--text-2);transition:background var(--tr),color var(--tr)}
+.btn-icon:hover{background:var(--surface2);color:var(--text)}
+.btn-add{display:flex;align-items:center;gap:6px;padding:8px 14px;background:linear-gradient(135deg,var(--accent),#6366f1);color:#fff;font-weight:600;font-size:13px;border-radius:8px;transition:opacity var(--tr),transform var(--tr);box-shadow:0 2px 12px var(--accent-glow)}
+.btn-add:hover{opacity:.9;transform:translateY(-1px)}
+.content-header{padding:16px 20px 8px;flex-shrink:0}
+.content-header h2{font-size:18px;font-weight:700;letter-spacing:-.3px}
+.content-header p{font-size:12px;color:var(--text-3);margin-top:2px}
+.entries-container{flex:1;overflow-y:auto;padding:8px 20px 20px}
+.entries-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.entry-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;cursor:pointer;transition:border-color var(--tr),transform var(--tr),box-shadow var(--tr)}
+.entry-card:hover{border-color:rgba(139,92,246,.4);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.entry-card.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 8px 24px rgba(0,0,0,.3)}
+.entry-card-header{display:flex;align-items:flex-start;gap:12px}
+.entry-avatar{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;flex-shrink:0;text-transform:uppercase}
+.entry-card-info{flex:1;min-width:0}
+.entry-title{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.entry-username{color:var(--text-3);font-size:12px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.entry-card-actions{display:flex;gap:4px;opacity:0;transition:opacity var(--tr)}
+.entry-card:hover .entry-card-actions{opacity:1}
+.entry-action-btn{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;font-size:13px;color:var(--text-3);transition:background var(--tr),color var(--tr)}
+.entry-action-btn:hover{background:var(--surface2);color:var(--text)}.entry-action-btn.del:hover{color:var(--red);background:rgba(244,63,94,.1)}
+.entry-url{font-size:11px;color:var(--text-3);margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.entry-footer{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.entry-category-badge{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;padding:2px 7px;border-radius:4px}
+.fav-star{font-size:14px;color:var(--text-3)}.fav-star.active{color:var(--yellow)}
+.str-dot{display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-right:4px;margin-top:1px;vertical-align:middle;transition:opacity 150ms}
+.str-dot:hover{opacity:.7}
+.copy-pw-btn{font-size:11px;color:var(--accent);cursor:pointer;padding:3px 8px;border-radius:5px;transition:background var(--tr);font-weight:500}
+.copy-pw-btn:hover{background:var(--accent-glow)}
+.empty-state{grid-column:1/-1;text-align:center;padding:60px 20px}
+.empty-icon{font-size:48px;margin-bottom:16px;opacity:.3}
+.empty-state h3{font-size:16px;font-weight:600;color:var(--text-2)}
+.empty-state p{color:var(--text-3);font-size:13px;margin-top:6px}
+#detail-panel{width:0;flex-shrink:0;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;transition:width 280ms cubic-bezier(0.4,0,0.2,1)}
+#detail-panel.open{width:320px}
+.detail-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.detail-header h3{font-size:14px;font-weight:600}
+.detail-actions{display:flex;gap:4px}
+.detail-body{flex:1;overflow-y:auto;padding:16px}
+.detail-field{margin-bottom:16px}
+.detail-field label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text-3);display:block;margin-bottom:4px}
+.detail-value{display:flex;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.detail-value span{flex:1;padding:8px 10px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:monospace}
+.detail-value span.plain{font-family:inherit}
+.copy-btn,.show-btn{padding:8px 10px;color:var(--text-3);font-size:13px;border-left:1px solid var(--border);flex-shrink:0;transition:background var(--tr),color var(--tr)}
+.copy-btn:hover{background:var(--surface3);color:var(--accent)}.show-btn:hover{background:var(--surface3);color:var(--text)}
+.detail-notes{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:13px;color:var(--text-2);white-space:pre-wrap;word-break:break-word}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:200;opacity:0;pointer-events:none;transition:opacity var(--tr)}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);width:480px;max-width:95vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.7);transform:translateY(12px) scale(.98);transition:transform 200ms cubic-bezier(0.4,0,0.2,1)}
+.modal-overlay.open .modal{transform:translateY(0) scale(1)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.modal-header h3{font-size:16px;font-weight:700}
+.close-btn{color:var(--text-3);font-size:20px;line-height:1;padding:4px;border-radius:6px;transition:background var(--tr),color var(--tr)}
+.close-btn:hover{background:var(--surface2);color:var(--text)}
+.modal-body{padding:20px;overflow-y:auto;flex:1}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0}
+.form-row{margin-bottom:16px}
+.form-row label{display:block;font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.form-row input,.form-row select,.form-row textarea{width:100%;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);outline:none;transition:border-color var(--tr),box-shadow var(--tr)}
+.form-row textarea{resize:vertical;min-height:80px}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.form-row select option{background:var(--surface2)}
+.pw-row{display:flex;gap:8px;align-items:flex-end}
+.pw-row .form-input-wrap{flex:1}
+.btn-gen{padding:9px 12px;background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-2);font-size:13px;transition:background var(--tr),color var(--tr),border-color var(--tr);white-space:nowrap}
+.btn-gen:hover{background:var(--accent-glow);color:var(--accent);border-color:var(--accent)}
+.strength-bar-wrap{height:4px;background:var(--surface3);border-radius:2px;margin-top:6px;overflow:hidden}
+.strength-bar{height:100%;border-radius:2px;transition:width 300ms,background 300ms;width:0}
+.strength-label{font-size:11px;color:var(--text-3);margin-top:3px}
+.form-checkbox{display:flex;align-items:center;gap:8px;cursor:pointer}
+.form-checkbox input{width:auto;accent-color:var(--accent)}
+.btn-secondary{padding:9px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-weight:500;color:var(--text-2);transition:background var(--tr),border-color var(--tr)}
+.btn-secondary:hover{background:var(--surface3);border-color:var(--text-3);color:var(--text)}
+.btn-danger{padding:9px 16px;background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.3);border-radius:var(--radius);font-weight:500;color:var(--red);transition:background var(--tr)}
+.btn-danger:hover{background:rgba(244,63,94,.22)}
+.btn-danger:disabled{opacity:0.4;cursor:not-allowed;pointer-events:none}
+.twofa-method-btn{display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 10px;background:var(--surface2);border:2px solid var(--border);border-radius:12px;cursor:pointer;transition:border-color .15s,background .15s;width:100%;text-align:center}
+.twofa-method-btn:hover{border-color:var(--accent);background:var(--surface3)}
+.twofa-method-btn.disabled{opacity:0.4;cursor:not-allowed}
+.twofa-method-btn.selected{border-color:var(--accent);background:rgba(139,92,246,.1)}
+.btn-save{padding:9px 20px;background:linear-gradient(135deg,var(--accent),#6366f1);color:#fff;font-weight:600;border-radius:var(--radius);transition:opacity var(--tr);box-shadow:0 2px 10px var(--accent-glow)}
+.btn-save:hover{opacity:.9}
+.btn-save:disabled{opacity:0.4;cursor:not-allowed;pointer-events:none}
+/* ── light mode ─────────────────────────── */
+body.light-mode{--bg:#f8fafc;--surface:#ffffff;--surface2:#f1f5f9;--surface3:#e2e8f0;
+  --border:#cbd5e1;--text:#0f172a;--text-2:#475569;--text-3:#94a3b8;
+  --shadow:0 4px 24px rgba(0,0,0,0.12)}
+body.light-mode .sidebar{border-right-color:#cbd5e1}
+/* ── expiry badges ──────────────────────── */
+.expiry-ok{font-size:10px;color:var(--green);font-weight:600}
+.expiry-warn{font-size:10px;color:var(--yellow);font-weight:600}
+.expiry-expired{font-size:10px;color:var(--red);font-weight:600}
+/* ── sort select ────────────────────────── */
+#sort-select option{background:var(--surface2)}
+/* ── duplicate btn ──────────────────────── */
+.btn-dup{background:none;border:none;cursor:pointer;font-size:14px;opacity:.6;padding:4px 6px;border-radius:6px;transition:opacity .15s}
+.btn-dup:hover{opacity:1;background:var(--surface3)}
+.gen-output{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;font-family:monospace;font-size:15px;letter-spacing:1px;color:var(--text);word-break:break-all;min-height:48px;margin-bottom:12px}
+.gen-controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.gen-range{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.gen-range label{flex-shrink:0;font-size:12px;color:var(--text-2);font-weight:600;width:80px}
+.gen-range input[type=range]{flex:1;accent-color:var(--accent)}
+.gen-range span{width:30px;text-align:center;font-size:13px;font-weight:700;color:var(--accent)}
+#toast-container{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:999}
+.toast{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);font-size:13px;font-weight:500;transform:translateX(120%);opacity:0;transition:transform 250ms cubic-bezier(0.4,0,0.2,1),opacity 250ms;max-width:280px}
+.toast.show{transform:translateX(0);opacity:1}
+.toast.success{border-left:3px solid var(--green)}.toast.error{border-left:3px solid var(--red)}.toast.info{border-left:3px solid var(--cyan)}
+.av-0{background:rgba(139,92,246,.18);color:#a78bfa}.av-1{background:rgba(34,211,238,.15);color:#22d3ee}
+.av-2{background:rgba(16,185,129,.15);color:#34d399}.av-3{background:rgba(251,191,36,.15);color:#fbbf24}
+.av-4{background:rgba(244,63,94,.15);color:#fb7185}.av-5{background:rgba(249,115,22,.15);color:#fb923c}
+.cat-login{background:rgba(139,92,246,.15);color:#a78bfa}.cat-email{background:rgba(34,211,238,.12);color:#67e8f9}
+.cat-banking{background:rgba(16,185,129,.12);color:#6ee7b7}.cat-social{background:rgba(244,63,94,.12);color:#fda4af}
+.cat-work{background:rgba(251,191,36,.12);color:#fde68a}.cat-other{background:rgba(100,116,139,.15);color:#94a3b8}
+.settings-section{margin-bottom:20px}
+.settings-section h4{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text-3);margin-bottom:10px}
+.settings-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+.settings-item:last-child{border-bottom:none}
+.settings-item-info span{display:block;font-size:13px;font-weight:500}
+.settings-item-info small{color:var(--text-3);font-size:11px}
+.vault-path-disp{font-size:11px;color:var(--text-3);font-family:monospace;background:var(--surface2);padding:6px 10px;border-radius:6px;word-break:break-all;margin-top:6px}
+.confirm-text{font-size:14px;color:var(--text-2);line-height:1.6}
+.confirm-name{font-weight:600;color:var(--text)}
+.path-row{display:flex;gap:8px;margin-top:8px}
+.path-row input{flex:1;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);outline:none;font-size:12px;font-family:monospace;transition:border-color var(--tr)}
+.path-row input:focus{border-color:var(--accent)}
+.path-status{font-size:11px;min-height:16px;margin-top:4px;color:var(--text-3)}
+
+/* ── vault switcher ─── */
+.vault-switch-item{display:flex;align-items:center;gap:8px;padding:6px 16px;cursor:pointer;color:var(--text-3);font-size:12px;font-weight:500;transition:color var(--tr)}
+.vault-switch-item:hover{color:var(--text)}.vault-switch-item.active{color:var(--accent)}
+.vault-switch-icon{font-size:14px;width:16px;text-align:center}
+.vault-switch-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ── tabs ─── */
+.tab-bar{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:8px}
+.tab-btn{padding:6px 14px;border-radius:6px;font-size:13px;font-weight:500;color:var(--text-3);transition:background var(--tr),color var(--tr)}
+.tab-btn:hover{color:var(--text);background:var(--surface2)}
+.tab-btn.active{color:var(--accent);background:var(--accent-glow)}
+.tab-pane{display:none}.tab-pane.active{display:block}
+/* ── health ─── */
+.health-score-wrap{text-align:center;padding:16px 0 8px}
+.health-score{font-size:56px;font-weight:800;line-height:1}
+.health-score-label{font-size:13px;color:var(--text-2);margin-top:4px}
+.health-section-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text-3);margin:16px 0 8px}
+.health-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.health-item:last-child{border-bottom:none}
+.health-item-name{flex:1;font-size:13px;font-weight:500}
+.health-item-detail{font-size:11px;color:var(--text-3)}
+/* ── category list ─── */
+.cat-list-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.cat-list-item:last-child{border-bottom:none}
+.color-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;display:inline-block}
+/* ── vault list ─── */
+.vault-list-item{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--border)}
+.vault-list-item:last-child{border-bottom:none}
+.vault-list-info{flex:1;min-width:0}
+.vault-list-info span{display:block;font-size:13px;font-weight:500}
+.vault-list-info small{color:var(--text-3);font-size:11px;font-family:monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+/* ── 2FA / QR ─── */
+.qr-wrap{display:block;padding:12px 0;max-width:220px;margin:0 auto}
+.qr-wrap svg{width:180px;height:180px;background:#fff;padding:8px;border-radius:8px}
+.secret-display{font-family:monospace;font-size:14px;letter-spacing:2px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;word-break:break-all;margin:8px 0;color:var(--accent)}
+.info-box{background:rgba(34,211,238,.08);border:1px solid rgba(34,211,238,.25);border-radius:var(--radius);padding:12px;font-size:12px;color:var(--cyan);line-height:1.6;margin:8px 0}
+.warning-box{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:var(--radius);padding:12px;font-size:12px;color:var(--yellow);line-height:1.6;margin:8px 0}
+/* ── TOTP live display ─── */
+.totp-live{display:flex;align-items:center;gap:12px;background:var(--surface2);border:1px solid rgba(139,92,246,.3);border-radius:8px;padding:10px 14px;margin-top:4px}
+.totp-code{font-family:monospace;font-size:22px;font-weight:700;letter-spacing:4px;color:var(--accent);flex:1}
+.totp-copy-btn{font-size:13px;color:var(--text-3);padding:4px;border-radius:6px;transition:color var(--tr),background var(--tr)}
+.totp-copy-btn:hover{color:var(--accent);background:var(--accent-glow)}
+.totp-timer-text{font-size:11px;color:var(--text-3);min-width:32px;text-align:right}
+.totp-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-family:monospace;font-weight:700;color:var(--accent);background:var(--accent-glow);padding:2px 7px;border-radius:4px;cursor:pointer}
+/* ── health badge ─── */
+#health-badge{background:var(--red);color:#fff!important}
+#health-badge:empty{display:none!important}
+
+/* ── vault tab edit ── */
+.vault-tabs-wrap{display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
+.vault-tabs-row{display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto}
+.vault-tab{display:flex;align-items:center;gap:12px;padding:11px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:all var(--tr);color:var(--text);position:relative;text-align:left;width:100%}
+.vault-tab:hover{border-color:var(--text-3);background:var(--surface3)}
+.vault-tab.active{border-color:var(--accent);background:var(--accent-glow)}
+.vault-tab-avatar{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex-shrink:0;color:#fff}
+.vault-tab-info{flex:1;min-width:0}
+.vault-tab-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vault-tab-meta{font-size:11px;color:var(--text-3);margin-top:1px}
+.vault-tab-status{font-size:11px;font-weight:600;padding:3px 9px;border-radius:12px;white-space:nowrap;flex-shrink:0}
+.vault-tab-status.unlocked{background:rgba(16,185,129,.15);color:var(--green)}
+.vault-tab-status.locked{background:var(--surface3);color:var(--text-3)}
+.vault-tab-edit-btn{position:absolute;top:6px;right:8px;width:20px;height:20px;display:none;align-items:center;justify-content:center;background:var(--surface3);border-radius:4px;font-size:11px;color:var(--text-3);transition:all var(--tr)}
+.vault-tab:hover .vault-tab-edit-btn{display:flex}
+.vault-tab-edit-btn:hover{background:var(--accent);color:#fff}
+.vault-tab-add{display:flex;align-items:center;justify-content:center;gap:4px;padding:9px 14px;background:var(--surface2);border:1px dashed var(--border);border-radius:var(--radius);cursor:pointer;font-size:12px;font-weight:600;color:var(--text-3);transition:all var(--tr);white-space:nowrap}
+.vault-tab-add:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
+.vault-dropdown{width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:13px;font-weight:500;cursor:pointer;outline:none;transition:border-color var(--tr)}
+.vault-dropdown:hover,.vault-dropdown:focus{border-color:var(--accent)}
+.entry-type-btn{padding:6px 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2);color:var(--text-2);font-size:12px;font-weight:600;cursor:pointer;transition:all var(--tr)}
+.entry-type-btn.active{border-color:var(--accent);background:var(--accent-glow);color:var(--accent)}
+.template-card{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;font-size:12px;font-weight:600;color:var(--text-2);transition:all var(--tr)}
+.template-card:hover{border-color:var(--accent);background:var(--accent-glow);color:var(--accent)}
+.tpl-icon{font-size:26px}
+.vault-dropdown option{background:var(--surface2);color:var(--text)}
+/* ── cat nav inline edit ── */
+.cat-item-wrap{display:flex;align-items:center;width:100%}
+.cat-item-label{flex:1}
+.cat-item-actions{display:none;gap:2px;margin-left:4px}
+.nav-item:hover .cat-item-actions{display:flex}
+.cat-action-btn{width:18px;height:18px;display:flex;align-items:center;justify-content:center;border-radius:4px;font-size:10px;color:var(--text-3);transition:all var(--tr)}
+.cat-action-btn:hover{background:var(--surface3);color:var(--text)}
+.cat-action-btn.del:hover{background:rgba(244,63,94,.15);color:var(--red)}
+.cat-inline-input{flex:1;background:var(--surface3);border:1px solid var(--accent);border-radius:4px;padding:2px 6px;color:var(--text);font-size:12px;font-weight:600;outline:none;min-width:0}
+/* ── copy countdown ── */
+.copy-countdown{display:inline-block;font-size:10px;font-weight:700;padding:1px 5px;border-radius:8px;background:rgba(139,92,246,.2);color:var(--accent);margin-left:4px;vertical-align:middle}
+/* ── breach check ── */
+.breach-row{display:flex;align-items:center;gap:8px;margin-top:8px}
+.breach-btn{font-size:11px;padding:3px 8px;border:1px solid var(--border);border-radius:6px;color:var(--text-3);background:var(--surface2);cursor:pointer;transition:all var(--tr)}
+.breach-btn:hover{border-color:var(--yellow);color:var(--yellow)}
+.breach-safe{color:var(--green);font-size:11px;font-weight:600}
+.breach-pwned{color:var(--red);font-size:11px;font-weight:600}
+.breach-checking{color:var(--text-3);font-size:11px}
+/* ── cat settings show all ── */
+.cat-list-item.builtin .cat-list-badge{font-size:9px;padding:1px 5px;border-radius:8px;background:var(--surface3);color:var(--text-3)}
+
+.type-toggle{display:flex;gap:8px;margin-top:4px}
+.type-btn{flex:1;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-2);font-size:13px;font-weight:600;cursor:pointer;transition:all var(--tr)}
+.type-btn:hover{border-color:var(--text-3);color:var(--text)}
+.type-btn.active{border-color:var(--accent);background:var(--accent-glow);color:var(--accent)}
+
+/* danger confirm modal */
+.danger-input{width:100%;padding:9px 12px;background:var(--surface2);border:2px solid var(--red);border-radius:var(--radius);color:var(--text);outline:none;margin-top:8px;font-family:monospace;font-size:13px}
+.danger-input:focus{box-shadow:0 0 0 3px rgba(244,63,94,.2)}
+/* cat chips */
+.cat-chip-picker{display:flex;flex-wrap:wrap;gap:6px;padding:4px 0}
+.cat-chip{display:flex;align-items:center;gap:4px;padding:5px 10px;border:1px solid var(--border);border-radius:20px;cursor:pointer;font-size:12px;font-weight:600;color:var(--text-2);background:var(--surface2);transition:all var(--tr);user-select:none}
+.cat-chip:hover{border-color:var(--text-3);color:var(--text)}
+.cat-chip.selected{color:#fff;border-color:transparent}
+/* addvault 2FA step */
+.vault-wizard-step{display:none}
+.vault-wizard-step.active{display:block}
+.step-check{text-align:center;padding:8px 0 16px}
+.step-check .check-icon{font-size:40px;margin-bottom:8px}
+.step-check h4{font-size:17px;font-weight:700;margin-bottom:6px}
+.step-check p{color:var(--text-2);font-size:13px;line-height:1.5}
+.twofa-wizard-qr{display:flex;justify-content:center;margin:12px 0;background:#fff;padding:8px;border-radius:8px}
+.twofa-wizard-qr svg{width:160px;height:160px}
+.twofa-secret-box{background:var(--surface3);border-radius:8px;padding:10px 14px;font-family:monospace;font-size:13px;letter-spacing:2px;text-align:center;color:var(--text);margin-bottom:12px;word-break:break-all}
+
+
+
+
+/* ── file entry cards ───────────────────────────────────── */
+.entry-card.file-entry .entry-avatar{font-size:22px;background:var(--surface2);border:1px solid var(--border)}
+.file-size-badge{font-size:10px;color:var(--text-3);margin-top:6px}
+.copy-pw-btn.download-btn{color:var(--cyan)}
+.copy-pw-btn.download-btn:hover{background:rgba(34,211,238,.12)}
+
+</style>
+</head>
+<body>
+<div id="js-error-banner" style="display:none;position:fixed;top:0;left:0;right:0;background:#f43f5e;color:#fff;padding:10px 16px;z-index:9999;font-family:monospace;font-size:12px;line-height:1.5"></div>
+<script>
+window.onerror=function(msg,src,line,col,err){
+  var d=document.getElementById('js-error-banner');
+  d.innerHTML='<b>JS ERROR</b> (line '+line+'): '+msg;
+  d.style.display='block';
+  return false;
+};
+window.addEventListener('unhandledrejection',function(e){
+  var msg=(e.reason&&e.reason.stack)||String(e.reason||'unknown');
+  if(msg.indexOf('chrome-extension')>=0||msg.indexOf('moz-extension')>=0) return;
+  var d=document.getElementById('js-error-banner');
+  d.innerHTML='<b>Unhandled Promise Rejection:</b><br>'+msg.replace(/\n/g,'<br>');
+  d.style.display='block';
+});
+</script>
+
+<div id="unlock-screen">
+  <div class="unlock-card">
+    <div class="unlock-logo">
+      <div class="logo-icon">&#128272;</div>
+      <h1>Secure Vault</h1>
+    </div>
+    <div class="vault-tabs-wrap"><div class="vault-tabs-row" id="vault-tabs"></div><button class="vault-tab-add" onclick="openAddVaultFromHome()">+ Add Vault</button></div>
+    <div id="unlock-novault-notice" style="display:none;text-align:center;padding:20px 0">
+      <p style="color:var(--text-2);font-size:14px;margin-bottom:16px">No vaults yet. Create one to get started.</p>
+      <button class="btn-save" onclick="openAddVaultFromHome()">+ Create Your First Vault</button>
+    </div>
+    <div id="unlock-form">
+      <label for="master-pw">Password</label>
+      <div class="input-wrap">
+        <input type="password" id="unlock-pw" placeholder="Enter your password" autocomplete="current-password">
+        <button class="eye-btn" onclick="togglePwVis(this,'unlock-pw')">&#128065;</button>
+      </div>
+      <div id="confirm-pw-row" style="display:none;margin-top:14px">
+        <label for="confirm-pw">Confirm Password</label>
+        <div class="input-wrap">
+          <input type="password" id="confirm-pw" placeholder="Confirm your password">
+          <button class="eye-btn" onclick="togglePwVis(this,'confirm-pw')">&#128065;</button>
+        </div>
+      </div>
+      <div class="unlock-error" id="unlock-error"></div>
+      <div id="forgot-pw-link" style="display:none;text-align:right;margin-bottom:10px"><a href="#" onclick="openForgotPassword();return false;" style="font-size:12px;color:var(--text-3);transition:color var(--tr)" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-3)'">Forgot password?</a></div>
+      <button class="btn-primary" id="unlock-btn" onclick="doUnlock()">Unlock Vault</button>
+    </div>
+    <div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+      <button onclick="window.open('/guide','_blank')" style="font-size:12px;color:var(--text-3);padding:4px 12px;border:1px solid var(--border);border-radius:20px;background:var(--surface2);transition:all 150ms" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--text-3)';this.style.borderColor='var(--border)'">User Guide</button>
+    </div>
+    <div id="totp-form" style="display:none">
+      <div class="info-box" style="margin-bottom:16px">&#128274; Two-factor authentication is enabled. Enter the 6-digit code from your authenticator app.</div>
+      <label for="totp-code">Authenticator Code</label>
+      <div class="input-wrap" style="margin-bottom:8px">
+        <input type="text" id="totp-code" placeholder="000000" maxlength="6" autocomplete="one-time-code" style="letter-spacing:6px;font-size:18px;text-align:center" onkeydown="if(event.key==='Enter')doTOTPVerify()">
+      </div>
+      <div class="unlock-error" id="totp-error"></div>
+      <button class="btn-primary" onclick="doTOTPVerify()">Verify &amp; Unlock</button>
+      <button onclick="cancelTOTP()" style="width:100%;margin-top:8px;padding:9px;color:var(--text-3);font-size:13px;border-radius:var(--radius);transition:color var(--tr)">&#8592; Back</button>
+    </div>
+    <div id="webauthn-form" style="display:none">
+      <div class="info-box" style="margin-bottom:16px">&#128273; Security key required. Click the button below and touch your key when prompted.</div>
+      <div class="unlock-error" id="webauthn-error"></div>
+      <button class="btn-primary" onclick="doWebAuthnVerify()">Use Security Key</button>
+      <button onclick="cancelWebAuthn()" style="width:100%;margin-top:8px;padding:9px;color:var(--text-3);font-size:13px;border-radius:var(--radius);transition:color var(--tr)">&#8592; Back</button>
+    </div>
+    <div id="pin-unlock-form" style="display:none">
+      <div class="info-box" style="margin-bottom:16px">&#128274; Quick-unlock enabled. Enter your 6-digit PIN.</div>
+      <div class="input-wrap" style="margin-bottom:12px">
+        <input type="password" id="pin-unlock-input" placeholder="000000" maxlength="6" inputmode="numeric" style="letter-spacing:8px;font-size:22px;text-align:center" autocomplete="off" onkeydown="if(event.key==='Enter')doPinUnlock()">
+      </div>
+      <div class="unlock-error" id="pin-unlock-error"></div>
+      <button class="btn-primary" onclick="doPinUnlock()">Unlock with PIN</button>
+      <button onclick="cancelPinUnlock()" style="width:100%;margin-top:8px;padding:9px;color:var(--text-3);font-size:13px;border-radius:var(--radius);transition:color var(--tr)">&#8592; Use Password Instead</button>
+    </div>
+    <div id="shared-path-notice" style="display:none">
+      <div class="shared-notice">
+        Shared vault path not configured.<br>
+        <a onclick="openSharedPathModal()">Set the path</a> to get started.
+      </div>
+    </div>
+  </div>
+</div>
+<div id="app" style="display:none">
+  <div id="lock-warning-bar" style="display:none;position:fixed;top:0;left:0;right:0;z-index:999;background:var(--yellow);color:#0d0d14;font-size:13px;font-weight:600;padding:8px 16px;display:none;align-items:center;justify-content:center;gap:12px">
+    <span id="lock-warning-msg">Vault locking in 30s</span>
+    <button onclick="stayActive()" style="background:rgba(0,0,0,.15);border:none;border-radius:6px;padding:4px 12px;font-weight:700;font-size:12px;cursor:pointer;color:#0d0d14">Stay Active</button>
+  </div>
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">&#128272;</div>
+      <span class="sidebar-title">Secure Vault</span>
+    </div>
+    <div class="sidebar-section-label">Vault — <span id="active-vault-label" style="color:var(--accent);text-transform:none;font-size:11px;font-weight:600"></span></div>
+    <div id="vault-switcher"></div>
+    <div class="sidebar-section-label" style="display:flex;align-items:center">Categories<button onclick="openModal('addcat-modal')" title="Add category" style="margin-left:auto;width:18px;height:18px;display:flex;align-items:center;justify-content:center;background:var(--surface3);border-radius:4px;font-size:13px;color:var(--text-3);line-height:1" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-3)'">+</button></div>
+    <div id="cat-nav">
+      <div class="nav-item active" data-cat="all" onclick="setCat(this)"><span class="nav-icon">&#128273;</span>All Items<span class="nav-count" id="count-all">0</span></div>
+      <div class="nav-item" data-cat="favorites" onclick="setCat(this)"><span class="nav-icon">&#11088;</span>Favorites<span class="nav-count" id="count-favorites">0</span></div>
+    </div>
+    <div class="sidebar-spacer"></div>
+    <div class="sidebar-footer">
+      <div class="nav-item" onclick="openHealth()"><span class="nav-icon">&#10084;&#65039;</span>Health<span class="nav-count" id="health-badge"></span></div>
+      <div class="nav-item" onclick="openVaultManager()"><span class="nav-icon">&#128451;</span>Vaults</div>
+      <div class="nav-item" onclick="openSettings()"><span class="nav-icon">&#9881;&#65039;</span>Settings</div>
+      <div class="nav-item lock-btn" onclick="doLock()"><span class="nav-icon">&#128274;</span>Lock Vault</div>
+      <div class="nav-item" onclick="quitApp()" style="color:var(--red);opacity:.7" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.7'"><span class="nav-icon">&#10006;</span>Quit</div>
+    </div>
+  </nav>
+  <div id="main">
+    <div class="topbar">
+      <div class="search-wrap">
+        <span class="search-icon">&#128269;</span>
+        <input type="text" id="search-input" placeholder="Search entries..." oninput="onSearch(this.value)">
+      </div>
+      <div class="topbar-right">
+        <button class="btn-icon" id="theme-toggle-btn" title="Toggle theme" onclick="toggleTheme()">&#9728;</button>
+        <button class="btn-icon" title="Generate Password" onclick="openGenerator()">&#9889;</button>
+        <button class="btn-icon" title="User Guide" onclick="window.open('/guide','_blank')">&#63;</button>
+        <button class="btn-add" onclick="openAddEntry()">&#43; Add Entry</button>
+        <label class="btn-add" style="cursor:pointer;background:var(--surface2);border:1px solid var(--border);color:var(--text-2);box-shadow:none" title="Upload file into current category">
+          <input type="file" id="topbar-file-input" multiple style="display:none" onchange="onTopbarFileUpload(event)">
+          &#128228; Upload File
+        </label>
+      </div>
+    </div>
+    <div class="content-header">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <h2 id="cat-title">All Items</h2>
+        <select id="sort-select" onchange="setSortBy(this.value)"
+                style="background:var(--surface2);border:1px solid var(--border);color:var(--text-2);
+                       border-radius:var(--radius);padding:4px 8px;font-size:11px;outline:none">
+          <option value="name-az">Name A-Z</option>
+          <option value="name-za">Name Z-A</option>
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="strength">Strength</option>
+          <option value="expiry">Expiry Date</option>
+          <option value="modified">Recently Modified</option>
+        </select>
+      </div>
+      <p id="cat-sub">0 entries</p>
+    </div>
+    <div class="entries-container"><div class="entries-grid" id="entries-grid"></div></div>
+  </div><!-- /main -->
+  <div id="detail-panel">
+    <div class="detail-header">
+      <h3 id="detail-title">Details</h3>
+      <div class="detail-actions">
+        <button class="btn-icon" title="Edit" onclick="editSel()">&#9999;&#65039;</button>
+        <button class="btn-icon" title="Duplicate" onclick="dupSel()">&#128203;</button>
+        <button class="btn-icon" title="Delete" onclick="deleteSel()">&#128465;&#65039;</button>
+        <button class="btn-icon" onclick="closeDetail()">&#10005;</button>
+      </div>
+    </div>
+    <div class="detail-body" id="detail-body"></div>
+  </div>
+</div>
+<div class="modal-overlay" id="entry-modal">
+  <div class="modal">
+    <div class="modal-header"><h3 id="modal-title">Add Entry</h3><button class="close-btn" onclick="closeModal('entry-modal')">&#10005;</button></div>
+    <div class="modal-body">
+      <div class="form-row" style="margin-bottom:14px">
+        <label>Entry Type</label>
+        <div style="display:flex;gap:8px">
+          <button id="entry-type-login" class="entry-type-btn active" onclick="setEntryType('login')">&#128274; Login</button>
+          <button id="entry-type-note" class="entry-type-btn" onclick="setEntryType('note')">&#128221; Secure Note</button>
+        </div>
+        <input type="hidden" id="f-entry-type" value="login">
+      </div>
+      <div class="form-row"><label>Title <span style="color:var(--red)">*</span></label><input type="text" id="f-title" placeholder="e.g. GitHub" autocomplete="off"></div>
+      <div class="form-row"><label>Username / Email</label><input type="text" id="f-username" placeholder="username@example.com" autocomplete="off"></div>
+      <div class="form-row"><label>Password</label>
+        <div class="pw-row"><div class="form-input-wrap">
+          <div class="input-wrap"><input type="password" id="f-password" placeholder="Password" autocomplete="new-password" oninput="checkStr(this.value)"><button class="eye-btn" onclick="togglePwVis(this,'f-password')">&#128065;</button></div>
+          <div class="strength-bar-wrap"><div class="strength-bar" id="str-bar"></div></div>
+          <div class="strength-label" id="str-label"></div>
+        </div><button class="btn-gen" onclick="fillGenPw()">Generate</button></div>
+      </div>
+      <div class="form-row"><label>Website URL</label><input type="text" id="f-url" placeholder="https://example.com" autocomplete="off"></div>
+      <div class="form-row"><label style="display:flex;justify-content:space-between;align-items:center">Categories <button type="button" class="btn-link" onclick="openQuickAddCat()" style="font-size:11px;font-weight:600;color:var(--accent);background:none;border:none;cursor:pointer;padding:0">+ New Category</button></label><div id="cat-chips" class="cat-chip-picker"></div><div id="quick-cat-form" style="display:none;margin-top:8px;background:var(--surface3);border-radius:8px;padding:10px 12px"><div style="display:flex;gap:6px;margin-bottom:6px"><input type="text" id="qcat-name" placeholder="Category name" style="flex:1;font-size:12px" maxlength="30"><input type="text" id="qcat-icon" placeholder="Icon" style="width:48px;font-size:14px;text-align:center" maxlength="2"></div><div id="qcat-colors" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px"><span class="color-dot" style="background:#8b5cf6;cursor:pointer;border:2px solid white" onclick="selectQCatColor(this,'#8b5cf6')"></span><span class="color-dot" style="background:#3b82f6;cursor:pointer;border:2px solid transparent" onclick="selectQCatColor(this,'#3b82f6')"></span><span class="color-dot" style="background:#10b981;cursor:pointer;border:2px solid transparent" onclick="selectQCatColor(this,'#10b981')"></span><span class="color-dot" style="background:#f59e0b;cursor:pointer;border:2px solid transparent" onclick="selectQCatColor(this,'#f59e0b')"></span><span class="color-dot" style="background:#ef4444;cursor:pointer;border:2px solid transparent" onclick="selectQCatColor(this,'#ef4444')"></span><span class="color-dot" style="background:#64748b;cursor:pointer;border:2px solid transparent" onclick="selectQCatColor(this,'#64748b')"></span></div><div style="display:flex;gap:6px"><button type="button" class="btn-secondary" style="font-size:11px;padding:5px 10px" onclick="closeQuickAddCat()">Cancel</button><button type="button" class="btn-save" style="font-size:11px;padding:5px 10px" onclick="doQuickAddCat()">Add</button></div><input type="hidden" id="qcat-color" value="#8b5cf6"></div></div>
+      <div class="form-row"><label>TOTP Secret <span style="color:var(--text-3);font-size:10px;font-weight:400;text-transform:none;letter-spacing:0">(optional — site's authenticator secret key)</span></label><input type="text" id="f-totp" placeholder="e.g. JBSWY3DPEHPK3PXP" autocomplete="off" style="font-family:monospace;letter-spacing:1px"></div>
+      <div class="form-row"><label>Notes</label><textarea id="f-notes" placeholder="Any additional notes..."></textarea></div>
+      <div class="form-row">
+        <label>Password Expires <span style="font-size:10px;font-weight:400;color:var(--text-3)">(optional)</span></label>
+        <input type="date" id="f-expiry">
+      </div>
+      <div class="form-row"><label class="form-checkbox"><input type="checkbox" id="f-fav"> Mark as favorite</label></div>
+    </div>
+    <div class="modal-footer"><button class="btn-secondary" onclick="closeModal('entry-modal')">Cancel</button><button class="btn-save" onclick="saveEntry()">Save Entry</button></div>
+  </div>
+</div>
+<div class="modal-overlay" id="gen-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div style="display:flex;gap:8px;align-items:center">
+        <h3 style="margin:0">Generator</h3>
+        <div style="display:flex;gap:4px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:2px">
+          <button id="gen-tab-pw"  onclick="switchGenTab('pw')"  style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:16px;background:var(--accent);color:#fff;transition:all 150ms">Password</button>
+          <button id="gen-tab-pp"  onclick="switchGenTab('pp')"  style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:16px;color:var(--text-2);transition:all 150ms">Passphrase</button>
+        </div>
+      </div>
+      <button class="close-btn" onclick="closeModal('gen-modal')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="gen-output" id="gen-output">Click Regenerate &#8594;</div>
+      <div class="strength-bar-wrap" style="margin-bottom:6px"><div class="strength-bar" id="gen-str-bar"></div></div>
+      <div class="strength-label" id="gen-str-label" style="margin-bottom:14px"></div>
+      <!-- Password controls -->
+      <div id="gen-pw-body">
+        <div class="gen-range"><label>Length</label><input type="range" id="gen-len" min="8" max="64" value="20" oninput="syncLen();genPw();"><span id="gen-len-disp">20</span></div>
+        <div class="gen-controls">
+          <label class="form-checkbox"><input type="checkbox" id="gen-upper" checked onchange="genPw()"> Uppercase (A-Z)</label>
+          <label class="form-checkbox"><input type="checkbox" id="gen-digits" checked onchange="genPw()"> Numbers (0-9)</label>
+          <label class="form-checkbox"><input type="checkbox" id="gen-symbols" checked onchange="genPw()"> Symbols (!@#)</label>
+          <label class="form-checkbox"><input type="checkbox" id="gen-no-amb" onchange="genPw()"> No ambiguous</label>
+        </div>
+      </div>
+      <!-- Passphrase controls -->
+      <div id="gen-pp-body" style="display:none">
+        <div class="gen-range"><label>Words</label><input type="range" id="pp-count" min="3" max="8" value="5" oninput="genPassphrase()"><span id="pp-count-disp" style="width:24px;text-align:center;font-size:13px;font-weight:700;color:var(--accent)">5</span></div>
+        <div class="gen-controls">
+          <label class="form-checkbox"><input type="checkbox" id="pp-cap" onchange="genPassphrase()"> Capitalize words</label>
+        </div>
+        <div style="margin-top:10px;display:flex;align-items:center;gap:8px">
+          <label style="font-size:12px;color:var(--text-2);white-space:nowrap">Separator</label>
+          <select id="pp-sep" onchange="genPassphrase()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius);padding:4px 8px;font-size:12px;outline:none">
+            <option value="-">Dash  (word-word)</option>
+            <option value=".">Dot   (word.word)</option>
+            <option value=" ">Space (word word)</option>
+            <option value="_">Under (word_word)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="document.getElementById('gen-pp-body').style.display==='none'?genPw():genPassphrase()">&#8635; Regenerate</button>
+      <button class="btn-secondary" onclick="copyField(S.genPw,'Password')">&#128203; Copy</button>
+      <button class="btn-save" onclick="useGenPw()">Use Password</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal" style="width:380px">
+    <div class="modal-header"><h3>Delete Entry</h3><button class="close-btn" onclick="closeModal('confirm-modal')">&#10005;</button></div>
+    <div class="modal-body"><p class="confirm-text">Delete <span class="confirm-name" id="confirm-name"></span>? This cannot be undone.</p></div>
+    <div class="modal-footer"><button class="btn-secondary" onclick="closeModal('confirm-modal')">Cancel</button><button class="btn-danger" id="confirm-del-btn">Delete</button></div>
+  </div>
+</div>
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal" style="width:520px">
+    <div class="modal-header"><h3>Settings</h3><button class="close-btn" onclick="closeModal('settings-modal')">&#10005;</button></div>
+    <div class="modal-body">
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="showSettingsTab('tab-security',this)">Security</button>
+        <button class="tab-btn" onclick="showSettingsTab('tab-data',this)">Data</button>
+        <button class="tab-btn" onclick="showSettingsTab('tab-activity',this);renderActivityLog()">Activity</button>
+        <button class="tab-btn" onclick="showSettingsTab('tab-appearance',this)">Appearance</button>
+      </div>
+      <div class="tab-pane active" id="tab-security">
+        <div id="twofa-status-area"></div>
+        <div class="settings-section" style="margin-top:16px">
+          <h4>Quick-Unlock PIN</h4>
+          <div class="settings-item">
+            <div class="settings-item-info"><span id="pin-status-label">Not configured</span><small>Set a short PIN to re-unlock after auto-lock without typing your full password</small></div>
+            <button class="btn-secondary" style="font-size:12px;white-space:nowrap" onclick="openPinSetup()">Manage PIN</button>
+          </div>
+        </div>
+        <div class="settings-section" style="margin-top:16px">
+          <h4>Auto-lock</h4>
+          <div class="settings-item">
+            <div class="settings-item-info"><span>Lock after inactivity</span><small>Vault locks automatically when idle</small></div>
+            <select id="autolock-select" style="padding:6px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);outline:none" onchange="saveAutolock()">
+              <option value="300">5 minutes</option>
+              <option value="900">15 minutes</option>
+              <option value="1800" selected>30 minutes</option>
+              <option value="3600">1 hour</option>
+              <option value="0">Never</option>
+            </select>
+          </div>
+        </div>
+        <div class="settings-section">
+          <h4>Vault Password</h4>
+          <div class="settings-item">
+            <div class="settings-item-info"><span>Change Vault Password</span><small>Re-encrypt vault with a new password</small></div>
+            <button class="btn-secondary" style="font-size:12px;padding:6px 12px" onclick="openChangePw()">Change</button>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="tab-pane" id="tab-data">
+        <div class="settings-section">
+          <h4>Vault Merge</h4>
+          <div class="settings-item">
+            <div class="settings-item-info"><span>Merge another vault into this one</span><small>Copies entries from a source vault. Duplicates (same title + username) are skipped.</small></div>
+            <button class="btn-secondary" style="font-size:12px" onclick="openMergeModal()">Merge Vault</button>
+          </div>
+        </div>
+        <div class="settings-section">
+          <h4>Import / Export</h4>
+          <div class="settings-item">
+            <div class="settings-item-info"><span>Export Vault</span><small>Download entries as CSV or JSON</small></div>
+            <div style="display:flex;gap:6px">
+              <button class="btn-secondary" style="font-size:12px;padding:6px 10px" onclick="doExport('csv')">CSV</button>
+              <button class="btn-secondary" style="font-size:12px;padding:6px 10px" onclick="doExport('json')">JSON</button>
+            </div>
+          </div>
+          <div class="settings-item" style="margin-top:10px">
+            <div class="settings-item-info"><span>Import Entries</span><small>CSV (generic/LastPass) or Bitwarden JSON</small></div>
+            <button class="btn-secondary" style="font-size:12px;padding:6px 10px" onclick="openImportModal()">Import</button>
+          </div>
+        </div>
+        <div class="settings-section">
+          <h4>Email SMTP <span style="font-size:11px;font-weight:400;color:var(--text-3)">(for Email OTP 2FA)</span></h4>
+          <div class="settings-item">
+            <div class="settings-item-info"><span id="smtp-configured-label">Not configured</span><small>Required for Email OTP two-factor authentication</small></div>
+            <button class="btn-secondary" style="font-size:12px;padding:6px 12px" onclick="openSmtpModal()">Configure</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity tab -->
+      <div class="tab-pane" id="tab-activity">
+        <div class="settings-section">
+          <h4>Vault Activity Log</h4>
+          <p style="font-size:12px;color:var(--text-3);margin-bottom:12px">Recent actions in this vault session. Log clears when the vault locks.</p>
+          <div id="activity-log-area" style="max-height:320px;overflow-y:auto"></div>
+        </div>
+      </div>
+
+      <!-- Appearance tab -->
+      <div class="tab-pane" id="tab-appearance">
+        <div class="settings-section">
+          <h4>Accent Color</h4>
+          <p style="font-size:12px;color:var(--text-3);margin-bottom:10px">Choose a highlight color used throughout the interface.</p>
+          <div id="accent-swatches" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px"></div>
+        </div>
+        <div class="settings-section" style="margin-top:16px">
+          <h4>Theme</h4>
+          <div class="settings-item">
+            <div class="settings-item-info"><span>Dark / Light mode</span><small>Toggle between dark and light interface</small></div>
+            <button class="btn-secondary" style="font-size:12px" onclick="toggleTheme()">Toggle Theme</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn-secondary" onclick="closeModal('settings-modal')">Close</button></div>
+  </div>
+</div>
+<!-- ── SMTP config modal ─── -->
+<div class="modal-overlay" id="smtp-modal">
+  <div class="modal" style="width:420px">
+    <div class="modal-header">
+      <h3>Email SMTP Configuration</h3>
+      <button class="close-btn" onclick="closeSmtpModal()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--text-3);margin-bottom:14px;line-height:1.5">Required for Email OTP two-factor authentication. Use an app-specific password, not your account login password.</p>
+      <div class="form-row" style="margin-bottom:8px">
+        <label>Provider</label>
+        <select id="smtp-preset" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius);padding:8px 10px;width:100%;outline:none" onchange="applySmtpPreset(this.value)">
+          <option value="">Custom</option>
+          <option value="gmail">Gmail</option>
+          <option value="outlook">Outlook / Hotmail</option>
+          <option value="yahoo">Yahoo</option>
+        </select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 80px;gap:8px;margin-bottom:8px">
+        <div class="form-row" style="margin:0"><label>SMTP Host</label><input type="text" id="smtp-host" placeholder="smtp.gmail.com"></div>
+        <div class="form-row" style="margin:0"><label>Port</label><input type="number" id="smtp-port" value="587" style="text-align:center"></div>
+      </div>
+      <div class="form-row" style="margin-bottom:8px"><label>Email (username)</label><input type="email" id="smtp-user" placeholder="you@gmail.com"></div>
+      <div class="form-row" style="margin-bottom:8px">
+        <label>App Password <span style="font-size:10px;font-weight:400;color:var(--text-3)">(not your login password)</span></label>
+        <div class="input-wrap">
+          <input type="password" id="smtp-pass" placeholder="App-specific password">
+          <button class="eye-btn" onclick="togglePwVis(this,'smtp-pass')">&#128065;</button>
+        </div>
+      </div>
+      <div id="smtp-status" style="font-size:12px;min-height:16px;margin-top:6px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeSmtpModal()">Cancel</button>
+      <button class="btn-secondary" style="margin-left:auto" onclick="testSmtp()">Send Test</button>
+      <button class="btn-save" onclick="saveSmtp()">Save</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="changepw-modal">
+  <div class="modal" style="width:400px">
+    <div class="modal-header"><h3>Change Vault Password</h3><button class="close-btn" onclick="closeModal('changepw-modal')">&#10005;</button></div>
+    <div class="modal-body">
+      <div class="form-row"><label>New Password</label><div class="input-wrap"><input type="password" id="new-pw-1" placeholder="New password"><button class="eye-btn" onclick="togglePwVis(this,'new-pw-1')">&#128065;</button></div></div>
+      <div class="form-row"><label>Confirm New Password</label><input type="password" id="new-pw-2" placeholder="Confirm new password"></div>
+      <div class="unlock-error" id="changepw-err"></div>
+    </div>
+    <div class="modal-footer"><button class="btn-secondary" onclick="closeModal('changepw-modal')">Cancel</button><button class="btn-save" onclick="doChangePw()">Update Password</button></div>
+  </div>
+</div>
+<!-- ── 2FA setup modal ─── -->
+<div class="modal-overlay" id="twofa-setup-modal">
+  <div class="modal" style="width:460px">
+    <div class="modal-header">
+      <h3 id="twofa-modal-title">Set Up Two-Factor Authentication</h3>
+      <button class="close-btn" onclick="closeModal('twofa-setup-modal')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <!-- Step 1: type picker -->
+      <div id="twofa-type-picker">
+        <p style="font-size:13px;color:var(--text-2);margin-bottom:14px">Choose a second factor for this vault:</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px">
+          <button class="twofa-method-btn" onclick="selectTwofaMethod('totp')">
+            <span style="font-size:24px">&#128242;</span>
+            <span style="font-weight:600;font-size:13px">Authenticator App</span>
+            <span style="font-size:11px;color:var(--text-3)">Google Auth, Authy, etc.</span>
+          </button>
+          <button class="twofa-method-btn" onclick="selectTwofaMethod('backup')">
+            <span style="font-size:24px">&#128220;</span>
+            <span style="font-weight:600;font-size:13px">Backup Codes</span>
+            <span style="font-size:11px;color:var(--text-3)">10 one-time recovery codes</span>
+          </button>
+          <button class="twofa-method-btn" onclick="selectTwofaMethod('email')">
+            <span style="font-size:24px">&#128140;</span>
+            <span style="font-weight:600;font-size:13px">Email OTP</span>
+            <span style="font-size:11px;color:var(--text-3)">Code sent to your email</span>
+          </button>
+          <button class="twofa-method-btn" onclick="selectTwofaMethod('webauthn')">
+            <span style="font-size:24px">&#128273;</span>
+            <span style="font-weight:600;font-size:13px">Security Key</span>
+            <span style="font-size:11px;color:var(--text-3)">YubiKey / Passkey / Touch ID</span>
+          </button>
+        </div>
+      </div>
+      <!-- Step 2a: TOTP setup -->
+      <div id="twofa-totp-setup" style="display:none">
+        <div class="info-box" style="margin-bottom:12px">Scan this QR code with your authenticator app, then enter the 6-digit code to confirm.</div>
+        <div class="qr-wrap" id="twofa-qr"></div>
+        <div style="font-size:12px;color:var(--text-3);margin-bottom:4px;text-align:center">Or enter the key manually:</div>
+        <div class="secret-display" id="twofa-secret-disp"></div>
+        <div class="form-row" style="margin-top:14px"><label>Confirm Code</label>
+          <div class="input-wrap">
+            <input type="text" id="twofa-confirm-code" placeholder="6-digit code" maxlength="6"
+                   style="letter-spacing:4px;text-align:center;font-size:16px"
+                   autocomplete="one-time-code" onkeydown="if(event.key==='Enter')doEnable2FA()">
+          </div>
+        </div>
+        <div style="color:var(--red);font-size:12px;min-height:16px" id="twofa-err"></div>
+      </div>
+      <!-- Step 2c: Email OTP -->
+      <div id="twofa-webauthn-setup" style="display:none">
+        <div class="info-box" style="margin-bottom:14px">&#128273; Insert your security key and click the button below. Your browser will prompt you to touch or activate the key.</div>
+        <div id="twofa-webauthn-err" style="color:var(--red);font-size:12px;min-height:16px;margin-bottom:8px"></div>
+      </div>
+      <div id="twofa-email-setup" style="display:none">
+        <div class="info-box" style="margin-bottom:12px">A 6-digit code will be emailed to you each time you unlock this vault. Requires SMTP configured in Settings &#8594; Data.</div>
+        <div class="form-row">
+          <label>Recipient Email</label>
+          <input type="email" id="twofa-email-addr" placeholder="you@example.com" autocomplete="email">
+        </div>
+        <div id="twofa-email-err" style="color:var(--red);font-size:12px;min-height:16px"></div>
+      </div>
+      <!-- Step 2b: Backup codes -->
+      <div id="twofa-backup-setup" style="display:none">
+        <div class="info-box" style="margin-bottom:12px">Save these codes somewhere safe. Each code can only be used once to unlock your vault if you lose access to your primary 2FA method.</div>
+        <div id="twofa-backup-codes-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;font-family:monospace;font-size:14px;letter-spacing:2px"></div>
+        <div style="display:flex;justify-content:center;margin-bottom:10px">
+          <button class="btn-secondary" style="font-size:12px;padding:6px 14px" onclick="copyBackupCodes()">&#128203; Copy All Codes</button>
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;user-select:none">
+          <input type="checkbox" id="backup-codes-confirm" onchange="document.getElementById('twofa-backup-save-btn').disabled=!this.checked">
+          I have saved these codes in a secure location
+        </label>
+        <div style="color:var(--red);font-size:12px;min-height:16px;margin-top:4px" id="twofa-backup-err"></div>
+      </div>
+    </div>
+    <div class="modal-footer" id="twofa-modal-footer">
+      <button class="btn-secondary" onclick="closeModal('twofa-setup-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+<!-- ── add category modal ─── -->
+<div class="modal-overlay" id="addcat-modal">
+  <div class="modal" style="width:380px">
+    <div class="modal-header"><h3 id="addcat-title">Add Category</h3><button class="close-btn" onclick="closeModal('addcat-modal')">&#10005;</button></div>
+    <div class="modal-body">
+      <div class="form-row"><label>Name</label><input type="text" id="addcat-name" placeholder="e.g. Gaming" maxlength="32" autocomplete="off"></div>
+      <div class="form-row"><label>Icon <span style="color:var(--text-3);font-size:10px;font-weight:400;text-transform:none">(emoji)</span></label><input type="text" id="addcat-icon" placeholder="&#127918;" maxlength="4" autocomplete="off" style="font-size:20px;text-align:center"></div>
+      <div class="form-row"><label>Color</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap" id="addcat-colors">
+          <span class="color-dot" style="background:#8b5cf6;width:24px;height:24px;cursor:pointer;border:2px solid transparent" onclick="selectCatColor(this,'#8b5cf6')"></span>
+          <span class="color-dot" style="background:#06b6d4;width:24px;height:24px;cursor:pointer;border:2px solid transparent" onclick="selectCatColor(this,'#06b6d4')"></span>
+          <span class="color-dot" style="background:#10b981;width:24px;height:24px;cursor:pointer;border:2px solid transparent" onclick="selectCatColor(this,'#10b981')"></span>
+          <span class="color-dot" style="background:#f59e0b;width:24px;height:24px;cursor:pointer;border:2px solid transparent" onclick="selectCatColor(this,'#f59e0b')"></span>
+          <span class="color-dot" style="background:#6366f1;width:24px;height:24px;cursor:pointer;border:2px solid transparent" onclick="selectCatColor(this,'#6366f1')"></span>
+          <span class="color-dot" style="background:#f43f5e;width:24px;height:24px;cursor:pointer;border:2px solid transparent" onclick="selectCatColor(this,'#f43f5e')"></span>
+          <span class="color-dot" style="background:#fb923c;width:24px;height:24px;cursor:pointer;border:2px solid transparent" onclick="selectCatColor(this,'#fb923c')"></span>
+          <span class="color-dot" style="background:#64748b;width:24px;height:24px;cursor:pointer;border:2px solid transparent" onclick="selectCatColor(this,'#64748b')"></span>
+        </div>
+        <input type="hidden" id="addcat-color" value="#8b5cf6">
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn-secondary" onclick="closeModal('addcat-modal')">Cancel</button><button class="btn-save" onclick="doAddCategory()">Add Category</button></div>
+  </div>
+</div>
+<!-- ── add vault modal ─── -->
+<div class="modal-overlay" id="addvault-modal">
+  <div class="modal" style="width:420px">
+    <div class="modal-header">
+      <h3>New Vault</h3>
+      <button class="close-btn" onclick="closeModal('addvault-modal')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div id="addvault-step1" class="vault-wizard-step active">
+        <div class="form-row">
+          <label>Type</label>
+          <div class="type-toggle">
+            <button id="addvault-type-local" class="type-btn active" onclick="setVaultType(false)">&#128187; Local</button>
+            <button id="addvault-type-shared" class="type-btn" onclick="setVaultType(true)">&#127760; Shared</button>
+          </div>
+        </div>
+        <div id="addvault-mode-row" class="form-row" style="display:none">
+          <label>Action</label>
+          <div class="type-toggle">
+            <button id="addvault-mode-new" class="type-btn active" onclick="setVaultMode('create')">&#43; Create New</button>
+            <button id="addvault-mode-existing" class="type-btn" onclick="setVaultMode('connect')">&#128279; Connect Existing</button>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Vault Name</label>
+          <input type="text" id="addvault-name" placeholder="e.g. Work, Personal" autocomplete="off">
+        </div>
+        <div id="addvault-path-row" class="form-row" style="display:none">
+          <label>File Path <span style="color:var(--text-3);font-size:10px;font-weight:400;text-transform:none">(network share or local path)</span></label>
+          <input type="text" id="addvault-path" placeholder="\\server\share\vault.json" style="font-family:monospace;font-size:12px">
+        </div>
+        <div class="form-row">
+          <label>Password</label>
+          <div class="input-wrap">
+            <input type="password" id="addvault-pw" placeholder="Minimum 8 characters" autocomplete="new-password">
+            <button class="eye-btn" onclick="togglePwVis(this,'addvault-pw')">&#128065;</button>
+          </div>
+        </div>
+        <div class="form-row" id="addvault-pw2-row">
+          <label>Confirm Password</label>
+          <div class="input-wrap">
+            <input type="password" id="addvault-pw2" placeholder="Repeat password" autocomplete="new-password">
+            <button class="eye-btn" onclick="togglePwVis(this,'addvault-pw2')">&#128065;</button>
+          </div>
+        </div>
+        <div id="addvault-pw-hint" style="font-size:11px;color:var(--text-3);margin-top:2px;line-height:1.5">Must be 8+ characters with at least one number and one special character (e.g. !@#$%)</div>
+        <div id="addvault-error" style="color:var(--red);font-size:12px;min-height:16px;margin-top:4px"></div>
+      </div>
+      <div id="addvault-step2" class="vault-wizard-step">
+        <div style="text-align:center;padding:8px 0 12px">
+          <div style="font-size:40px;margin-bottom:8px">&#9989;</div>
+          <h4 id="addvault-created-name" style="font-size:17px;font-weight:700;margin-bottom:6px"></h4>
+          <p style="color:var(--text-2);font-size:13px">Add two-factor authentication? <span style="font-size:12px;color:var(--text-3)">(Optional)</span></p>
+        </div>
+        <!-- 2FA method picker -->
+        <div id="addvault-2fa-picker" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:8px">
+          <button class="twofa-method-btn" onclick="doAddVaultSelectMethod('totp')">
+            <span style="font-size:22px">&#128241;</span>
+            <span style="font-size:11px;font-weight:500">Authenticator App</span>
+          </button>
+          <button class="twofa-method-btn" onclick="doAddVaultSelectMethod('backup')">
+            <span style="font-size:22px">&#128273;</span>
+            <span style="font-size:11px;font-weight:500">Backup Codes</span>
+          </button>
+          <button class="twofa-method-btn" onclick="doAddVaultSelectMethod('email')">
+            <span style="font-size:22px">&#128140;</span>
+            <span style="font-size:11px;font-weight:500">Email OTP</span>
+          </button>
+          <button class="twofa-method-btn" onclick="doAddVaultSelectMethod('webauthn')">
+            <span style="font-size:22px">&#128273;</span>
+            <span style="font-size:11px;font-weight:500">Security Key</span>
+          </button>
+        </div>
+        <!-- TOTP area -->
+        <div id="addvault-2fa-area" style="display:none;margin-top:8px">
+          <div id="addvault-qr" style="display:block;background:#fff;padding:12px;border-radius:8px;margin:0 auto 12px;max-width:220px"></div>
+          <p style="font-size:11px;color:var(--text-3);text-align:center;margin-bottom:4px">Or enter manually:</p>
+          <div id="addvault-2fa-secret" style="background:var(--surface3);border-radius:8px;padding:10px 14px;font-family:monospace;font-size:12px;letter-spacing:2px;text-align:center;word-break:break-all;margin-bottom:12px"></div>
+          <div class="form-row">
+            <label>Verification Code</label>
+            <input type="text" id="addvault-2fa-code" placeholder="6-digit code" maxlength="6"
+                   inputmode="numeric" style="letter-spacing:4px;font-size:16px;text-align:center"
+                   onkeydown="if(event.key==='Enter') doAddVaultEnable2FA()">
+          </div>
+          <div id="addvault-2fa-error" style="color:var(--red);font-size:12px;min-height:16px"></div>
+        </div>
+        <!-- Backup codes area -->
+        <div id="addvault-backup-area" style="display:none;margin-top:8px">
+          <div class="info-box" style="margin-bottom:12px;font-size:12px">Save these codes somewhere safe. Each can be used once to unlock your vault if you lose your primary 2FA device.</div>
+          <div id="addvault-backup-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;font-family:monospace;font-size:13px;letter-spacing:2px"></div>
+          <label class="form-checkbox"><input type="checkbox" id="addvault-backup-confirm" onchange="onAddVaultBackupConfirm(this)"> I have saved these codes</label>
+          <div id="addvault-backup-error" style="color:var(--red);font-size:12px;min-height:16px;margin-top:4px"></div>
+        </div>
+        <!-- Email OTP area -->
+        <div id="addvault-email-area" style="display:none;margin-top:8px">
+          <div class="info-box" style="margin-bottom:8px;font-size:12px">A one-time code will be emailed each time you unlock this vault. SMTP must be configured first.</div>
+          <div class="form-row">
+            <label>Email Address</label>
+            <input type="email" id="addvault-email-addr" placeholder="you@example.com" autocomplete="email">
+          </div>
+          <div id="addvault-email-error" style="color:var(--red);font-size:12px;min-height:16px"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" id="addvault-footer">
+      <button class="btn-secondary" id="addvault-cancel-btn" onclick="closeModal('addvault-modal')">Cancel</button>
+      <button class="btn-save" id="addvault-submit" onclick="doAddVault()">Create Vault</button>
+    </div>
+  </div>
+</div>
+<!-- ── vault manager modal ─── -->
+<div class="modal-overlay" id="vault-manager-modal">
+  <div class="modal" style="width:480px">
+    <div class="modal-header"><h3>Vault Manager</h3><button class="close-btn" onclick="closeModal('vault-manager-modal')">&#10005;</button></div>
+    <div class="modal-body">
+      <div id="vault-manager-list"></div>
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="btn-secondary" style="flex:1;font-size:12px;padding:8px" onclick="openAddVaultModal(false)">+ Local Vault</button>
+        <button class="btn-secondary" style="flex:1;font-size:12px;padding:8px" onclick="openAddVaultModal(true)">+ Shared Vault</button>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn-secondary" onclick="closeModal('vault-manager-modal')">Close</button></div>
+  </div>
+</div>
+<!-- ── health modal ─── -->
+<div class="modal-overlay" id="health-modal">
+  <div class="modal" style="width:520px">
+    <div class="modal-header"><h3>Password Health</h3><button class="close-btn" onclick="closeModal('health-modal')">&#10005;</button></div>
+    <div class="modal-body" id="health-body">
+      <div style="text-align:center;padding:40px;color:var(--text-3)">Loading...</div>
+    </div>
+    <div class="modal-footer"><button class="btn-secondary" onclick="closeModal('health-modal')">Close</button></div>
+  </div>
+</div>
+<!-- ── confirm vault delete modal ─── -->
+<div class="modal-overlay" id="confirm-vault-modal">
+  <div class="modal" style="width:380px">
+    <div class="modal-header"><h3>Remove Vault</h3><button class="close-btn" onclick="closeModal('confirm-vault-modal')">&#10005;</button></div>
+    <div class="modal-body">
+      <p class="confirm-text">Remove <span class="confirm-name" id="confirm-vault-name"></span> from the list? The vault file on disk is not deleted.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('confirm-vault-modal')">Cancel</button>
+      <button class="btn-danger" id="confirm-vault-del-btn">Remove</button>
+    </div>
+  </div>
+</div>
+<!-- Vault merge modal -->
+<div class="modal-overlay" id="merge-modal">
+  <div class="modal" style="width:400px">
+    <div class="modal-header">
+      <h3>Merge Vault</h3>
+      <button class="close-btn" onclick="closeModal('merge-modal')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text-2);margin-bottom:14px">Copy entries from another vault into the current vault. Entries with the same title and username are skipped.</p>
+      <div class="form-row">
+        <label>Source Vault</label>
+        <select id="merge-source-select" style="width:100%;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);outline:none">
+          <option value="">Select source vault...</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Source Vault Password</label>
+        <div class="input-wrap">
+          <input type="password" id="merge-pw" placeholder="Password for source vault" autocomplete="off">
+        </div>
+      </div>
+      <div id="merge-result" style="font-size:13px;margin-top:8px;min-height:18px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('merge-modal')">Cancel</button>
+      <button class="btn-save" id="merge-btn" onclick="doMergeVaults()">Merge</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="app.js"></script>
+
+<div class="modal-overlay" id="vault-edit-modal" onclick="closeModal('vault-edit-modal')">
+  <div onclick="event.stopPropagation()" style="width:380px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;box-shadow:var(--shadow)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <h3 id="vault-edit-title" style="font-size:16px;font-weight:700">Edit Vault</h3>
+      <button onclick="closeModal('vault-edit-modal')" style="color:var(--text-3);font-size:16px;padding:4px">&#10005;</button>
+    </div>
+    <input type="hidden" id="vault-edit-id">
+    <div style="margin-bottom:14px">
+      <label style="display:block;font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Display Name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-3)">(local label only)</span></label>
+      <input type="text" id="vault-edit-name" placeholder="My Vault" style="width:100%;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="display:block;font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Vault Password</label>
+      <div style="position:relative">
+        <input type="password" id="vault-edit-pw" placeholder="Enter vault password to save" style="width:100%;padding:9px 40px 9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter')doUpdateVaultEdit()">
+        <button class="eye-btn" onclick="togglePwVis(this,'vault-edit-pw')">&#128065;</button>
+      </div>
+    </div>
+    <div id="vault-edit-path-row" style="display:none;margin-bottom:14px">
+      <label style="display:block;font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">File Path</label>
+      <input type="text" id="vault-edit-path" placeholder="\\server\share\vault.json or C:\path\vault.json" style="width:100%;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);outline:none;font-size:12px" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+    </div>
+    <div class="form-row" id="vault-edit-2fa-row" style="display:none"><label>Authenticator Code <span style="font-size:10px;color:var(--text-3)">(required if 2FA enabled)</span></label><input type="text" id="vault-edit-2fa-code" placeholder="000000" maxlength="6" autocomplete="off" style="letter-spacing:4px;font-size:16px;text-align:center"></div>
+      <div id="vault-edit-error" style="color:var(--red);font-size:12px;min-height:16px;margin-bottom:12px"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <button id="vault-edit-del-btn" onclick="confirmDeleteVaultFromEdit()" class="btn-danger" style="font-size:12px;padding:7px 12px">&#128465; Remove Vault</button>
+      <div style="display:flex;gap:8px">
+        <button onclick="closeModal('vault-edit-modal')" style="padding:8px 14px;border:1px solid var(--border);border-radius:var(--radius);color:var(--text-2);font-size:13px;background:var(--surface2)">Cancel</button>
+        <button onclick="doUpdateVaultEdit()" style="padding:8px 16px;background:linear-gradient(135deg,var(--accent),#6366f1);color:#fff;border-radius:var(--radius);font-size:13px;font-weight:600">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="modal-overlay" id="danger-confirm-modal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h3 id="dc-title">Confirm</h3>
+      <button class="close-btn" onclick="closeDangerConfirm()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <p id="dc-desc" style="color:var(--text-2);font-size:13px;line-height:1.6"></p>
+      <div id="dc-type-row" style="margin-top:14px;display:none">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--text-3);margin-bottom:6px">
+          Type <strong id="dc-name" style="color:var(--text)"></strong> to confirm
+        </label>
+        <input type="text" id="dc-input" class="danger-input" placeholder="" autocomplete="off"
+               oninput="checkDangerInput()" onkeydown="if(event.key==='Enter')executeDangerConfirm()">
+      </div>
+      <div id="dc-error" style="color:var(--red);font-size:12px;min-height:16px;margin-top:6px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeDangerConfirm()">Cancel</button>
+      <button id="dc-confirm-btn" class="btn-danger" onclick="executeDangerConfirm()" disabled>Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── backup codes view modal ─── -->
+<div class="modal-overlay" id="backup-codes-modal">
+  <div class="modal" style="width:440px">
+    <div class="modal-header">
+      <h3>Backup Codes</h3>
+      <button class="close-btn" onclick="closeModal('backup-codes-modal')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-box" style="margin-bottom:12px">Save these codes. Each can be used once instead of your authenticator code if you lose access to your phone.</div>
+      <div id="backup-codes-view-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;font-family:monospace;font-size:14px;letter-spacing:2px"></div>
+      <button class="btn-secondary" style="width:100%;font-size:12px" onclick="copyBackupCodesView()">&#128203; Copy All</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-save" onclick="closeModal('backup-codes-modal')">Done - I have saved them</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── import modal ─── -->
+<div class="modal-overlay" id="import-modal">
+  <div class="modal" style="width:520px">
+    <div class="modal-header">
+      <h3>Import Entries</h3>
+      <button class="close-btn" onclick="closeModal('import-modal')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label>Format</label>
+        <select id="import-format" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius);padding:8px 10px;width:100%;outline:none">
+          <option value="auto">Auto-detect</option>
+          <option value="csv">Generic CSV</option>
+          <option value="lastpass">LastPass CSV</option>
+          <option value="bitwarden">Bitwarden JSON</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>File</label>
+        <input type="file" id="import-file" accept=".csv,.json" style="color:var(--text);padding:6px 0">
+      </div>
+      <div id="import-preview" style="display:none;margin-top:8px">
+        <div style="font-size:12px;color:var(--text-2);margin-bottom:6px" id="import-preview-label"></div>
+        <div id="import-preview-table" style="max-height:180px;overflow-y:auto;font-size:11px;background:var(--surface3);border-radius:8px;padding:8px"></div>
+      </div>
+      <div id="import-status" style="font-size:12px;color:var(--red);min-height:16px;margin-top:6px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('import-modal')">Cancel</button>
+      <button class="btn-secondary" id="import-parse-btn" onclick="parseImportFile()">Preview</button>
+      <button class="btn-save" id="import-confirm-btn" style="display:none" onclick="confirmImport()">Import</button>
+    </div>
+  </div>
+</div>
+<!-- ── locked vault delete modal ─── -->
+<div class="modal-overlay" id="locked-vault-del-modal">
+  <div class="modal" style="width:420px">
+    <div class="modal-header">
+      <h3>Remove Vault</h3>
+      <button class="close-btn" onclick="closeModal('locked-vault-del-modal')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--text-2);font-size:13px;line-height:1.6;margin-bottom:12px">
+        Type the vault name and password to confirm removal. The vault file on disk is NOT deleted.
+      </p>
+      <div class="form-row">
+        <label>Type <strong id="lvd-name"></strong> to confirm</label>
+        <input type="text" id="lvd-name-input" autocomplete="off" oninput="checkLockedVaultDel()">
+      </div>
+      <div class="form-row" id="lvd-pw-row">
+        <label>Vault Password</label>
+        <div class="input-wrap">
+          <input type="password" id="lvd-password" autocomplete="off" oninput="checkLockedVaultDel()">
+          <button class="eye-btn" onclick="togglePwVis(this,'lvd-password')">&#128065;</button>
+        </div>
+      </div>
+      <div id="lvd-error" style="color:var(--red);font-size:12px;min-height:16px;margin-top:4px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('locked-vault-del-modal')">Cancel</button>
+      <button class="btn-danger" id="lvd-confirm-btn" onclick="doLockedVaultDelete()" disabled>Remove Vault</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="forgot-pw-modal">
+  <div class="modal" style="width:420px">
+    <div class="modal-header"><h3>Account Recovery</h3><button class="close-btn" onclick="closeModal('forgot-pw-modal')">&#10005;</button></div>
+    <div class="modal-body">
+      <div id="forgot-step-send">
+        <p style="color:var(--text-2);font-size:14px;margin-bottom:16px">A one-time verification code will be sent to the email address registered with this vault.</p>
+        <div id="forgot-send-hint" style="font-size:13px;color:var(--accent);font-weight:600;text-align:center;margin-bottom:16px"></div>
+        <div class="info-box" style="margin-bottom:16px;background:rgba(251,191,36,.08);border-color:var(--yellow);color:var(--yellow)">&#9888; Your vault data cannot be recovered without your original password. This verifies your identity only.</div>
+        <div id="forgot-send-error" style="color:var(--red);font-size:12px;min-height:16px;margin-bottom:8px"></div>
+        <button class="btn-primary" onclick="doForgotSend()">Send Verification Code</button>
+      </div>
+      <div id="forgot-step-verify" style="display:none">
+        <p style="color:var(--text-2);font-size:14px;margin-bottom:4px">Enter the 6-digit code sent to <span id="forgot-email-hint" style="color:var(--accent);font-weight:600"></span></p>
+        <p style="color:var(--text-3);font-size:12px;margin-bottom:16px">Code expires in 10 minutes.</p>
+        <div class="input-wrap" style="margin-bottom:12px">
+          <input type="text" id="forgot-code-input" placeholder="000000" maxlength="6" style="letter-spacing:6px;font-size:18px;text-align:center" autocomplete="one-time-code" onkeydown="if(event.key==='Enter')doForgotVerify()">
+        </div>
+        <div id="forgot-verify-error" style="color:var(--red);font-size:12px;min-height:16px;margin-bottom:8px"></div>
+        <button class="btn-primary" onclick="doForgotVerify()">Verify Code</button>
+      </div>
+      <div id="forgot-step-done" style="display:none">
+        <div style="text-align:center;padding:12px 0">
+          <div style="font-size:40px;margin-bottom:12px">&#10003;</div>
+          <p style="font-weight:700;font-size:15px;margin-bottom:8px;color:var(--green)">Identity Verified</p>
+          <p style="color:var(--text-2);font-size:13px;margin-bottom:20px">If you remember your password, enter it below to unlock your vault. If not, you can remove the vault (your encrypted data will be deleted) and start fresh.</p>
+        </div>
+        <label>Enter your vault password</label>
+        <div class="input-wrap" style="margin-bottom:12px">
+          <input type="password" id="forgot-pw-input" placeholder="Enter password to unlock" autocomplete="current-password">
+          <button class="eye-btn" onclick="togglePwVis(this,'forgot-pw-input')">&#128065;</button>
+        </div>
+        <div id="forgot-unlock-error" style="color:var(--red);font-size:12px;min-height:16px;margin-bottom:8px"></div>
+        <button class="btn-primary" style="margin-bottom:8px" onclick="doForgotUnlock()">Unlock Vault</button>
+        <button id="forgot-remove-btn" class="btn-danger" style="width:100%" onclick="doForgotRemove()">Remove Vault (Irreversible)</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="templates-modal">
+  <div class="modal" style="width:540px">
+    <div class="modal-header"><h3>New Entry — Choose a Template</h3><button class="close-btn" onclick="closeModal('templates-modal')">&#10005;</button></div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+        <button class="template-card" onclick="useTemplate('blank')"><div class="tpl-icon">&#43;</div><div>Blank</div></button>
+        <button class="template-card" onclick="useTemplate('login')"><div class="tpl-icon">&#127760;</div><div>Website Login</div></button>
+        <button class="template-card" onclick="useTemplate('email')"><div class="tpl-icon">&#128231;</div><div>Email Account</div></button>
+        <button class="template-card" onclick="useTemplate('banking')"><div class="tpl-icon">&#127970;</div><div>Banking</div></button>
+        <button class="template-card" onclick="useTemplate('social')"><div class="tpl-icon">&#128172;</div><div>Social Media</div></button>
+        <button class="template-card" onclick="useTemplate('wifi')"><div class="tpl-icon">&#128246;</div><div>Wi-Fi</div></button>
+        <button class="template-card" onclick="useTemplate('license')"><div class="tpl-icon">&#128190;</div><div>Software License</div></button>
+        <button class="template-card" onclick="useTemplate('apikey')"><div class="tpl-icon">&#128273;</div><div>API Key</div></button>
+        <button class="template-card" onclick="useTemplate('note')"><div class="tpl-icon">&#128221;</div><div>Secure Note</div></button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="pin-setup-modal">
+  <div class="modal" style="width:380px">
+    <div class="modal-header"><h3 id="pin-modal-title">Set Quick-Unlock PIN</h3><button class="close-btn" onclick="closeModal('pin-setup-modal')">&#10005;</button></div>
+    <div class="modal-body">
+      <p style="color:var(--text-2);font-size:13px;margin-bottom:16px">A PIN lets you quickly re-unlock your vault after auto-lock without entering your full password. The PIN is stored locally and tied to this device session.</p>
+      <div id="pin-setup-form">
+        <div class="form-row">
+          <label>Choose PIN (6 digits)</label>
+          <input type="password" id="pin-new-1" placeholder="000000" maxlength="6" inputmode="numeric" pattern="[0-9]*" style="letter-spacing:8px;font-size:20px;text-align:center">
+        </div>
+        <div class="form-row">
+          <label>Confirm PIN</label>
+          <input type="password" id="pin-new-2" placeholder="000000" maxlength="6" inputmode="numeric" pattern="[0-9]*" style="letter-spacing:8px;font-size:20px;text-align:center">
+        </div>
+        <div id="pin-setup-error" style="color:var(--red);font-size:12px;min-height:16px"></div>
+      </div>
+      <div id="pin-clear-form" style="display:none">
+        <div class="info-box" style="margin-bottom:12px">&#128274; A PIN is currently set for this vault.</div>
+      </div>
+    </div>
+    <div class="modal-footer" id="pin-modal-footer">
+      <button class="btn-secondary" onclick="closeModal('pin-setup-modal')">Cancel</button>
+      <button class="btn-save" onclick="savePinSetup()">Save PIN</button>
+    </div>
+  </div>
+</div>
+
+    <div class="modal-body"><p class="confirm-text">Delete <span class="confirm-name" id="file-confirm-name"></span>? The encrypted file will be permanently removed.</p></div>
+    <div class="modal-footer"><button class="btn-secondary" onclick="closeModal('file-confirm-modal')">Cancel</button><button class="btn-danger" id="file-confirm-del-btn">Delete</button></div>
+  </div>
+</div>
+
+</body>
+</html>

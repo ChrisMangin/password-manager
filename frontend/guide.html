@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Secure Vault — User Guide</title>
+<style>
+:root{
+  --bg:#0d0d14;--surface:#13131d;--surface2:#1a1a28;--surface3:#232336;
+  --border:#2a2a40;--accent:#8b5cf6;--accent-glow:rgba(139,92,246,0.15);
+  --green:#10b981;--yellow:#fbbf24;--red:#f43f5e;
+  --text:#e2e8f0;--text-2:#94a3b8;--text-3:#64748b;
+  --radius:10px;--radius-lg:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;line-height:1.65;padding:0}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* Layout */
+.layout{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+nav{background:var(--surface);border-right:1px solid var(--border);padding:24px 0;position:sticky;top:0;height:100vh;overflow-y:auto}
+main{padding:48px 64px;max-width:860px}
+@media(max-width:768px){.layout{grid-template-columns:1fr} nav{display:none} main{padding:24px 20px}}
+
+/* Nav */
+.nav-logo{padding:0 20px 24px;font-size:17px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);margin-bottom:12px}
+.nav-section{padding:6px 20px 2px;font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;margin-top:8px}
+nav a{display:block;padding:5px 20px;font-size:13px;color:var(--text-2);border-radius:0;transition:color .15s,background .15s}
+nav a:hover{color:var(--text);background:var(--surface2);text-decoration:none}
+
+/* Content */
+h1{font-size:32px;font-weight:800;margin-bottom:8px}
+h2{font-size:22px;font-weight:700;margin:48px 0 16px;padding-top:16px;border-top:1px solid var(--border);color:var(--text)}
+h2:first-of-type{border-top:none;margin-top:24px}
+h3{font-size:16px;font-weight:700;margin:28px 0 10px;color:var(--text)}
+p{margin-bottom:14px;color:var(--text-2)}
+p strong{color:var(--text)}
+ul,ol{padding-left:20px;margin-bottom:14px;color:var(--text-2)}
+li{margin-bottom:5px}
+li strong{color:var(--text)}
+code{background:var(--surface3);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-size:13px;font-family:'Cascadia Code','Fira Code',monospace;color:var(--accent)}
+
+.subtitle{font-size:16px;color:var(--text-3);margin-bottom:32px}
+
+/* Callouts */
+.tip,.warn,.note{border-radius:var(--radius);padding:14px 16px;margin-bottom:18px;font-size:14px;border-left:3px solid}
+.tip{background:rgba(16,185,129,.06);border-color:var(--green);color:var(--text-2)}
+.warn{background:rgba(251,191,36,.06);border-color:var(--yellow);color:var(--text-2)}
+.note{background:rgba(139,92,246,.06);border-color:var(--accent);color:var(--text-2)}
+.tip strong,.warn strong,.note strong{color:var(--text)}
+
+/* Steps */
+.steps{counter-reset:step;list-style:none;padding:0;margin-bottom:18px}
+.steps li{counter-increment:step;display:flex;gap:14px;margin-bottom:14px;align-items:flex-start}
+.steps li::before{content:counter(step);min-width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+
+/* Table */
+table{width:100%;border-collapse:collapse;margin-bottom:18px;font-size:14px}
+th{background:var(--surface2);color:var(--text);padding:8px 12px;text-align:left;font-weight:600;border:1px solid var(--border)}
+td{padding:8px 12px;border:1px solid var(--border);color:var(--text-2)}
+tr:nth-child(even) td{background:var(--surface)}
+
+/* Badge */
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;margin-left:6px}
+.badge-green{background:rgba(16,185,129,.15);color:var(--green)}
+.badge-yellow{background:rgba(251,191,36,.15);color:var(--yellow)}
+.badge-purple{background:rgba(139,92,246,.15);color:var(--accent)}
+
+/* Section icon */
+.si{margin-right:8px}
+
+/* Screenshot placeholder style */
+.screen-demo{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin:16px 0;font-size:13px;color:var(--text-3);text-align:center}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav>
+  <div class="nav-logo">&#128272; Secure Vault</div>
+
+  <div class="nav-section">Getting Started</div>
+  <a href="#overview">Overview</a>
+  <a href="#first-vault">Creating Your First Vault</a>
+  <a href="#home-screen">Home Screen</a>
+
+  <div class="nav-section">Vault Contents</div>
+  <a href="#entries">Entries</a>
+  <a href="#entry-history">Password History</a>
+  <a href="#secure-notes">Secure Notes</a>
+  <a href="#templates">Entry Templates</a>
+  <a href="#categories">Categories</a>
+  <a href="#search">Search &amp; Sort</a>
+  <a href="#generator">Password Generator</a>
+  <a href="#health">Password Health</a>
+
+  <div class="nav-section">Security</div>
+  <a href="#2fa">Two-Factor Authentication</a>
+  <a href="#pin">PIN Quick-Unlock</a>
+  <a href="#autolock">Auto-Lock</a>
+  <a href="#activity-log">Activity Log</a>
+
+  <div class="nav-section">Vaults</div>
+  <a href="#vault-types">Local vs Shared</a>
+  <a href="#managing-vaults">Managing Vaults</a>
+  <a href="#vault-merge">Vault Merge</a>
+  <a href="#import-export">Import &amp; Export</a>
+
+  <div class="nav-section">Reference</div>
+  <a href="#settings">Settings</a>
+  <a href="#appearance">Appearance</a>
+  <a href="#new-features">What's New</a>
+  <a href="#files">Encrypted Files</a>
+  <a href="#shortcuts">Keyboard Shortcuts</a>
+  <a href="#best-practices">Best Practices</a>
+  <a href="#troubleshooting">Troubleshooting</a>
+</nav>
+<main>
+
+<h1>&#128272; Secure Vault</h1>
+<p class="subtitle">A local, encrypted, offline-first password vault. No cloud, no accounts, no telemetry.</p>
+
+<!-- ═══════════════════════════════ OVERVIEW ═══════════════════════════════ -->
+<h2 id="overview"><span class="si">&#128506;</span>Overview</h2>
+<p>All vault data lives in JSON files on your machine, encrypted with <strong>AES-256-GCM</strong> using a key derived from your master password via <strong>PBKDF2-SHA256</strong> (600,000 rounds). The server component runs locally at <code>http://localhost:7474</code> and shuts down when you close the app.</p>
+
+<h3>Key concepts</h3>
+<ul>
+  <li><strong>Vault</strong> — an encrypted container. You can have multiple vaults (personal, work, shared with team).</li>
+  <li><strong>Entry</strong> — a single credential (login or secure note) stored inside a vault.</li>
+  <li><strong>Session token</strong> — issued on unlock; required for every API call. Expires when the vault auto-locks.</li>
+  <li><strong>Master password</strong> — never stored anywhere. If lost, the vault cannot be recovered.</li>
+</ul>
+
+<div class="warn"><strong>Important:</strong> There is no password recovery. If you forget your master password the vault data is permanently inaccessible. Use 2FA backup codes as an additional safety net, not a password substitute.</div>
+
+<!-- ═══════════════════════════════ FIRST VAULT ═══════════════════════════ -->
+<h2 id="first-vault"><span class="si">&#10024;</span>Creating Your First Vault</h2>
+<ol class="steps">
+  <li>Launch <code>Vault.exe</code>. On first run, the unlock screen shows an <strong>Add Vault</strong> prompt.</li>
+  <li>Click <strong>+ Add Vault</strong>. Choose a label (e.g. "Personal") and a strong master password. Confirm the password.</li>
+  <li>Optionally select a vault type: <strong>Local</strong> (default — file stored next to the exe) or <strong>Shared</strong> (file at a custom path, for network drives or shared folders).</li>
+  <li>Click <strong>Create Vault</strong>. The success screen appears.</li>
+  <li>Optionally configure <strong>Two-Factor Authentication</strong> now, or skip and do it later in Settings.</li>
+</ol>
+
+<h3>2FA during vault creation</h3>
+<p>After a vault is created you can pick any of four methods:</p>
+<table>
+  <tr><th>Option</th><th>What you need</th></tr>
+  <tr><td>&#128241; Authenticator App</td><td>Google Authenticator, Authy, or any TOTP app</td></tr>
+  <tr><td>&#128220; Backup Codes</td><td>Download 10 one-time recovery codes — store them safely</td></tr>
+  <tr><td>&#128140; Email OTP</td><td>A Gmail (or other) account with SMTP app password configured</td></tr>
+  <tr><td>&#128273; Security Key</td><td>YubiKey, Windows Hello, Touch ID, or any FIDO2 device</td></tr>
+</table>
+<p>You can skip 2FA now and enable it any time from <strong>Settings → Security</strong>.</p>
+
+<!-- ═══════════════════════════════ HOME SCREEN ════════════════════════════ -->
+<h2 id="home-screen"><span class="si">&#127968;</span>Home Screen</h2>
+<p>The unlock screen is what you see when the app starts or the vault auto-locks.</p>
+<ul>
+  <li><strong>Vault dropdown</strong> — select which vault to unlock. Only shows when at least one vault exists.</li>
+  <li><strong>Edit Vault</strong> — button below the dropdown. Opens the vault edit modal to rename or remove the selected vault.</li>
+  <li><strong>Master password field</strong> — type your password and press Enter or click Unlock.</li>
+  <li><strong>PIN field</strong> — shown instead of the password field after you set up a PIN. Appears after the vault auto-locks mid-session. Use "Enter password instead" to fall back to the master password.</li>
+  <li><strong>2FA field</strong> — appears after correct password entry if 2FA is enabled on the vault.</li>
+  <li><strong>+ Add Vault</strong> — always visible; creates an additional vault alongside existing ones.</li>
+</ul>
+<div class="tip"><strong>Multiple vaults:</strong> You can switch between unlocked vaults at any time using the dropdown. Each vault maintains its own session independently.</div>
+
+<!-- ═══════════════════════════════ ENTRIES ════════════════════════════════ -->
+<h2 id="entries"><span class="si">&#128273;</span>Entries</h2>
+<h3>Adding an entry</h3>
+<ol class="steps">
+  <li>Click the <strong>+ Add Entry</strong> button to open the template picker.</li>
+  <li>Pick a template (or Blank) — this pre-fills the category and placeholder hints for common credential types.</li>
+  <li>Fill in the fields. Use the password generator (&#9889;) to create a strong password.</li>
+  <li>Click <strong>Save</strong>.</li>
+</ol>
+
+<h3>Entry fields</h3>
+<table>
+  <tr><th>Field</th><th>Notes</th></tr>
+  <tr><td>Title</td><td>Required. Used in search and list views.</td></tr>
+  <tr><td>Username / Email</td><td>Login identifier.</td></tr>
+  <tr><td>Password</td><td>Click the eye icon to reveal. Click &#9889; to generate.</td></tr>
+  <tr><td>URL</td><td>Optional. Click the &#127760; icon to open the URL in your browser.</td></tr>
+  <tr><td>TOTP Secret</td><td>Paste the secret from a site's 2FA setup page to store OTP codes inline.</td></tr>
+  <tr><td>Notes</td><td>Free-form text. Supports multi-line.</td></tr>
+  <tr><td>Categories</td><td>Assign one or more. Used for filtering.</td></tr>
+  <tr><td>Expiry date</td><td>Optional. Past-due entries show a red badge; entries within 30 days show yellow.</td></tr>
+</table>
+
+<h3>Entry type toggle</h3>
+<p>At the top of the add/edit form, toggle between <strong>Login</strong> and <strong>Secure Note</strong>. Secure Note hides the username, password, URL, TOTP, and expiry fields and expands the notes area.</p>
+
+<h3>Viewing, editing, deleting</h3>
+<ul>
+  <li>Click an entry in the list to open the detail panel.</li>
+  <li>Click the <strong>&#9998; Edit</strong> icon to edit.</li>
+  <li>Click the <strong>&#128203; Copy</strong> icon next to any field to copy it to the clipboard.</li>
+  <li>Click <strong>&#127760;</strong> next to the URL to open the site directly.</li>
+  <li>Click the <strong>Duplicate</strong> icon to clone an entry.</li>
+  <li>Click the <strong>&#128465; Delete</strong> icon to permanently remove it.</li>
+</ul>
+
+<h3>Expiry badges</h3>
+<ul>
+  <li><span class="badge badge-green">OK</span> — valid, no expiry set or expiry is far out.</li>
+  <li><span class="badge badge-yellow">Expiring</span> — expires within 30 days.</li>
+  <li><span class="badge badge-yellow" style="background:rgba(244,63,94,.15);color:var(--red)">Expired</span> — past the expiry date.</li>
+</ul>
+
+<!-- ═══════════════════════════════ SECURE NOTES ═══════════════════════════ -->
+<h2 id="secure-notes"><span class="si">&#128221;</span>Secure Notes</h2>
+<p>Select the <strong>Secure Note</strong> type when adding or editing an entry. Use this for:</p>
+<ul>
+  <li>Wi-Fi passwords and network keys</li>
+  <li>Software license keys and serial numbers</li>
+  <li>Security question answers</li>
+  <li>SSH passphrases, API keys, or any free-form sensitive text</li>
+</ul>
+<p>The entry type is persisted — secure notes display with a note icon in the list view.</p>
+
+<!-- ═══════════════════════════════ TEMPLATES ══════════════════════════════ -->
+<h2 id="templates"><span class="si">&#128196;</span>Entry Templates</h2>
+<p>Clicking <strong>+ Add Entry</strong> opens a 9-card template picker instead of a blank form. Each template pre-fills the category, entry type, and relevant placeholder text:</p>
+<table>
+  <tr><th>Template</th><th>Pre-fills</th></tr>
+  <tr><td>Blank</td><td>Nothing — clean slate</td></tr>
+  <tr><td>Website Login</td><td>Category: Web, URL field focused</td></tr>
+  <tr><td>Email Account</td><td>Category: Email</td></tr>
+  <tr><td>Banking</td><td>Category: Finance</td></tr>
+  <tr><td>Social Media</td><td>Category: Social</td></tr>
+  <tr><td>Wi-Fi</td><td>Type: Secure Note, Category: Network</td></tr>
+  <tr><td>Software License</td><td>Type: Secure Note, Category: Software</td></tr>
+  <tr><td>API Key</td><td>Type: Secure Note, Category: Developer</td></tr>
+  <tr><td>Secure Note</td><td>Type: Secure Note, notes area focused</td></tr>
+</table>
+
+<!-- ═══════════════════════════════ CATEGORIES ════════════════════════════ -->
+<h2 id="categories"><span class="si">&#127991;</span>Categories</h2>
+<h3>Built-in categories</h3>
+<p>Banking, Email, Finance, Health, Identity, Network, Servers, Shopping, Social, Software, Travel, Web, Work, Developer, Other.</p>
+<h3>Custom categories</h3>
+<p>Go to <strong>Settings → Data → Categories</strong>. Type a name and click Add. Custom categories appear alongside built-ins in all pickers and filters.</p>
+<h3>Multi-category entries</h3>
+<p>An entry can belong to multiple categories. Use the category checkboxes in the entry form. All matched categories appear as tags on the entry.</p>
+<h3>Filtering</h3>
+<p>Click a category name in the left sidebar to filter the entry list. Click again (or click All) to clear the filter.</p>
+
+<!-- ═══════════════════════════════ SEARCH ════════════════════════════════ -->
+<h2 id="search"><span class="si">&#128269;</span>Search &amp; Sort</h2>
+<p>The search bar at the top of the entry list is a live filter. It matches against title, username, URL, and notes. Results update as you type.</p>
+<h3>Sort options</h3>
+<ul>
+  <li><strong>A–Z / Z–A</strong> — alphabetical by title.</li>
+  <li><strong>Newest / Oldest</strong> — by creation date.</li>
+  <li><strong>Recently Modified</strong> — last-edited entries first.</li>
+</ul>
+
+<!-- ═══════════════════════════════ GENERATOR ════════════════════════════ -->
+<h2 id="generator"><span class="si">&#9889;</span>Password Generator</h2>
+<p>Click the lightning bolt (&#9889;) next to the password field to open the generator. Configure:</p>
+<ul>
+  <li><strong>Length</strong> — drag the slider (8–128 characters).</li>
+  <li><strong>Character sets</strong> — toggle uppercase, lowercase, numbers, symbols.</li>
+  <li><strong>Strength meter</strong> — real-time entropy estimate shown below the output.</li>
+</ul>
+<p>Click the generated password to copy it, or click <strong>Use This</strong> to fill it into the entry form.</p>
+
+<!-- ═══════════════════════════════ HEALTH ════════════════════════════════ -->
+<h2 id="health"><span class="si">&#10084;&#65039;</span>Password Health</h2>
+<p>Available in the sidebar or via the toolbar icon. The health panel scans all entries in the current vault and flags:</p>
+<ul>
+  <li><strong>Weak passwords</strong> — entropy below threshold.</li>
+  <li><strong>Reused passwords</strong> — same password used in more than one entry.</li>
+  <li><strong>Old passwords</strong> — entries with an expiry date that has passed.</li>
+</ul>
+<p>Click any flagged entry to jump directly to it.</p>
+
+<!-- ═══════════════════════════════ 2FA ════════════════════════════════════ -->
+
+<h2 id="entry-history"><span class="si">&#128196;</span>Password History</h2>
+<p>Every time you change an entry's password the previous one is saved automatically. The last <strong>5 passwords</strong> are retained per entry.</p>
+<p>In the entry detail panel, look for <strong>Password History</strong> below the Password field. Click <strong>Show N previous passwords</strong> to expand the list. Each historical password has a copy button and a reveal button.</p>
+<ul>
+  <li>History only records changes made while the vault is unlocked — the original password set on creation is not stored separately.</li>
+  <li>Use history to recover a credential if a site forced a rotation and you need the old value.</li>
+  <li>History entries cannot be deleted individually — they rotate out automatically as new changes push older ones off the 5-entry limit.</li>
+</ul>
+
+
+<h2 id="activity-log"><span class="si">&#128336;</span>Activity Log</h2>
+<p>Open <strong>Settings &#8594; Activity</strong> to see a timestamped record of actions in the current vault session.</p>
+<p>Logged events include:</p>
+<table>
+  <tr><th>Event</th><th>Description</th></tr>
+  <tr><td>&#128275; Vault unlocked</td><td>Vault was opened with a valid password/2FA</td></tr>
+  <tr><td>&#128274; Vault locked</td><td>Manual lock or auto-lock timeout</td></tr>
+  <tr><td>&#43; Entry added</td><td>New entry created, with title</td></tr>
+  <tr><td>&#9998; Entry updated</td><td>Existing entry edited, with title</td></tr>
+  <tr><td>&#128465; Entry deleted</td><td>Entry removed, with title</td></tr>
+  <tr><td>&#128256; Vault merged</td><td>Entries imported from another vault</td></tr>
+</table>
+<div class="note"><strong>Session only:</strong> The activity log is in-memory and clears when the vault locks. It is never written to disk. For a persistent audit trail, use the Export feature periodically.</div>
+
+<h2 id="2fa"><span class="si">&#128274;</span>Two-Factor Authentication</h2>
+<p>Open <strong>Settings → Security</strong>. The 2FA section shows the current status. If no 2FA is configured, click <strong>Enable 2FA</strong>. If 2FA is already active, click <strong>Edit 2FA</strong> to add more methods or disable existing ones.</p>
+
+<h3>Authenticator App (TOTP) — Recommended</h3>
+<ol class="steps">
+  <li>Click Enable 2FA → Authenticator App.</li>
+  <li>Scan the QR code with Google Authenticator, Authy, 1Password, or any TOTP app. Alternatively, copy the secret key and enter it manually.</li>
+  <li>Enter the 6-digit code from your app to verify, then click <strong>Verify &amp; Enable</strong>.</li>
+</ol>
+
+<h3>Backup Codes</h3>
+<ol class="steps">
+  <li>Click Enable 2FA → Backup Codes.</li>
+  <li>Download or copy all 10 codes. Each code is single-use.</li>
+  <li>Check the "I have saved these codes" checkbox and click <strong>Done</strong>.</li>
+</ol>
+<p>Once any 2FA is enabled, you can view or regenerate backup codes any time via <strong>Edit 2FA → Backup Codes</strong>.</p>
+<div class="warn"><strong>Store backup codes offline.</strong> If you lose your authenticator and have no backup codes, you cannot unlock the vault. Print them or store in a secondary secure location.</div>
+
+<h3>Email OTP</h3>
+<ol class="steps">
+  <li>Click Enable 2FA → Email OTP.</li>
+  <li>If SMTP is not yet configured, the SMTP setup dialog appears automatically. Use Gmail with an <a href="https://myaccount.google.com/apppasswords" target="_blank">app-specific password</a>.</li>
+  <li>Enter the email address where codes should be sent. Click <strong>Send Test &amp; Enable</strong>.</li>
+  <li>Enter the code you receive in email to confirm.</li>
+</ol>
+<div class="note"><strong>Gmail setup:</strong> Go to myaccount.google.com → Security → 2-Step Verification → App passwords. Create a password for "Mail". Use that 16-character code — not your Google account password — in the SMTP App Password field.</div>
+
+<h3>Security Key (WebAuthn)</h3>
+<ol class="steps">
+  <li>Click Enable 2FA → Security Key.</li>
+  <li>Click <strong>Register Security Key</strong> and follow your browser/OS prompt to tap your key, use Windows Hello, or use Touch ID.</li>
+  <li>Once registered, future vault unlocks prompt you to tap your key after entering the master password.</li>
+</ol>
+<p>Supported devices: YubiKey (any series), Windows Hello (PIN, fingerprint, face), Touch ID on Mac, any FIDO2/WebAuthn authenticator.</p>
+<div class="tip"><strong>Multiple methods:</strong> You can enable more than one 2FA method on the same vault. At unlock, the vault will prompt whichever method is registered. If you have a security key registered, it takes priority.</div>
+
+<h3>Managing 2FA (Edit mode)</h3>
+<p>Click <strong>Edit 2FA</strong> in Settings → Security. The type picker opens with status badges on each tile — <strong>✓ Enabled</strong> (green) or "Not configured" (gray). Click an enabled method to disable it; click a disabled method to set it up.</p>
+
+<!-- ═══════════════════════════════ PIN ════════════════════════════════════ -->
+<h2 id="pin"><span class="si">&#128946;</span>PIN Quick-Unlock</h2>
+<p>After setting up a PIN, when the vault auto-locks during a session the unlock screen shows a PIN input instead of the master password field — saving you from retyping a long password.</p>
+<ol class="steps">
+  <li>Go to <strong>Settings → Security → Quick-Unlock PIN → Manage PIN</strong>.</li>
+  <li>Enter your master password to authenticate, then set a 6-digit PIN.</li>
+  <li>When the vault auto-locks, type the PIN. The vault re-opens without a full unlock.</li>
+</ol>
+<ul>
+  <li>The PIN is only valid for the current app session. Closing and reopening the app clears it.</li>
+  <li>Manually locking the vault (lock button) also clears the PIN session — you must re-enter the master password.</li>
+  <li>Use <strong>Enter password instead</strong> on the unlock screen to bypass PIN and use the master password.</li>
+</ul>
+<div class="warn"><strong>PIN security:</strong> The PIN is encrypted with AES-GCM + PBKDF2 in localStorage, not stored in plaintext. Still, choose a PIN you do not use elsewhere.</div>
+
+<!-- ═══════════════════════════════ AUTO-LOCK ══════════════════════════════ -->
+<h2 id="autolock"><span class="si">&#9201;</span>Auto-Lock</h2>
+<p>The vault automatically locks after a configurable period of inactivity. Configure the timeout in <strong>Settings → Security → Auto-Lock Timeout</strong>.</p>
+<ul>
+  <li>Options: 1 min, 5 min, 15 min, 30 min, 1 hr, Never.</li>
+  <li>A <strong>yellow warning banner</strong> appears at the top of the app when 30 seconds remain: "Vault locking in 30s — Stay Active".</li>
+  <li>Click <strong>Stay Active</strong> or perform any action (click, keypress, mouse move) to reset the timer.</li>
+  <li>When the vault locks, unsaved form data is discarded. Save entries before stepping away.</li>
+</ul>
+
+<!-- ═══════════════════════════════ VAULT TYPES ════════════════════════════ -->
+<h2 id="vault-types"><span class="si">&#128451;</span>Local vs Shared Vaults</h2>
+<h3>Local vault</h3>
+<p>The default. The vault file (<code>&lt;label&gt;.json</code>) is stored in the same directory as <code>Vault.exe</code>. Suitable for personal use on a single machine.</p>
+<h3>Shared vault</h3>
+<p>You specify a custom file path — a network share, NAS drive, or synced folder (Dropbox, OneDrive). Multiple users or machines can open the same vault file as long as each knows the master password. There is no conflict resolution; only one person should write at a time.</p>
+<p>When you click <strong>+ Add Vault → Shared</strong>, two options appear:</p>
+<ul>
+  <li><strong>+ Create New</strong> — Creates a brand-new encrypted vault file at the path you specify. Enter a vault name, the full file path (must end in <code>.json</code>), a new password, and confirm it. After creation you can optionally enable 2FA.</li>
+  <li><strong>&#128279; Connect Existing</strong> — Registers a vault file that already exists (created by another machine or user). Enter the vault name, the path to the existing <code>.json</code> file, and its current password. The app verifies the password unlocks the file before adding it. No confirm-password field — no new vault is created. Once connected, the vault opens immediately.</li>
+</ul>
+<p class="tip">&#128161; Use <strong>Create New</strong> when setting up a shared vault for the first time. Use <strong>Connect Existing</strong> on every other machine that needs access to the same file.</p>
+<h3>Vault file format</h3>
+<ul>
+  <li>Plain JSON with encrypted payload — human-readable metadata (label, created date) and an AES-GCM-encrypted entries blob.</li>
+  <li>Files are safe to copy, backup, or move. A vault file opened on another machine with the same master password unlocks normally.</li>
+</ul>
+
+<!-- ═══════════════════════════════ MANAGING VAULTS ═══════════════════════ -->
+<h2 id="managing-vaults"><span class="si">&#128230;</span>Managing Vaults</h2>
+<h3>Switching vaults</h3>
+<p>Use the dropdown at the top of the unlock screen to select a vault. Unlocked vaults show [Unlocked] next to their name. You can have multiple vaults open simultaneously — switching between them does not lock the others.</p>
+<h3>Editing a vault</h3>
+<p>Select the vault in the dropdown and click <strong>Edit Vault</strong>. You can rename the vault or change its master password. If 2FA is enabled, you must provide a valid 2FA code before saving changes.</p>
+<h3>Removing a vault</h3>
+<p>Click <strong>Edit Vault → Remove Vault</strong>. Enter the master password to confirm. This removes the vault from the app's registry only — the <code>.json</code> file is not deleted from disk.</p>
+
+<!-- ═══════════════════════════════ IMPORT/EXPORT ══════════════════════════ -->
+
+<h2 id="vault-merge"><span class="si">&#128256;</span>Vault Merge</h2>
+<p>Combine two vaults into one. Go to <strong>Settings &#8594; Data &#8594; Merge Vault</strong>.</p>
+<ol class="steps">
+  <li>Unlock the <strong>destination</strong> vault (the one you want entries merged into).</li>
+  <li>Open Settings &#8594; Data and click <strong>Merge Vault</strong>.</li>
+  <li>Select the <strong>source vault</strong> from the dropdown.</li>
+  <li>Enter the source vault's master password.</li>
+  <li>Click <strong>Merge</strong>. A summary shows how many entries were added and how many duplicates were skipped.</li>
+</ol>
+<h3>Deduplication logic</h3>
+<p>An entry is considered a duplicate if another entry in the destination vault has the <em>same title and username</em> (case-insensitive). Duplicates are skipped — the destination copy is kept unchanged.</p>
+<div class="tip"><strong>Safe to re-run:</strong> Running a merge twice will not create duplicates. If you add new entries to the source vault later, merging again only imports the new ones.</div>
+<div class="warn"><strong>The source vault is not modified.</strong> Merge is a read-only operation on the source. The source vault file remains intact after merging.</div>
+
+<h2 id="import-export"><span class="si">&#8597;&#65039;</span>Import &amp; Export</h2>
+<h3>Export</h3>
+<p>Go to <strong>Settings → Data → Export</strong>. Exports all entries from the current vault to a CSV file. The exported CSV is unencrypted — treat it as sensitive and delete it after use.</p>
+<h3>Import</h3>
+<p>Go to <strong>Settings → Data → Import</strong>. Supported format: CSV with columns <code>title, username, password, url, notes, category</code>. Extra columns are ignored.</p>
+<div class="tip">To migrate from another secure vault: export it to CSV, ensure the column headers match (rename them if needed), then import.</div>
+
+<!-- ═══════════════════════════════ SETTINGS ══════════════════════════════ -->
+<h2 id="settings"><span class="si">&#9881;&#65039;</span>Settings</h2>
+<p>Open via the &#9881; icon in the main toolbar.</p>
+<h3>Security tab</h3>
+<ul>
+  <li><strong>Two-Factor Authentication</strong> — shows active status (method names) and an Enable / Edit button.</li>
+  <li><strong>Quick-Unlock PIN</strong> — set or clear the session PIN.</li>
+  <li><strong>Auto-Lock Timeout</strong> — choose inactivity timeout.</li>
+  <li><strong>SMTP Configuration</strong> — configure email sending for Email OTP.</li>
+</ul>
+<h3>Data tab</h3>
+<ul>
+  <li><strong>Vault Merge</strong> — merge entries from another vault into the current one.</li>
+  <li><strong>Vaults</strong> — list all vaults; add, edit, or remove.</li>
+  <li><strong>Categories</strong> — add or delete custom categories.</li>
+  <li><strong>Export</strong> — download entries as CSV.</li>
+  <li><strong>Import</strong> — load entries from CSV.</li>
+  <li><strong>Shared Vault Path</strong> — set the file path for a shared vault.</li>
+</ul>
+<h3>Activity tab</h3>
+<p>Shows the in-session activity log — timestamped list of unlocks, entry changes, and vault merges. Clears when the vault locks.</p>
+<h3>Appearance tab</h3>
+<p>Accent color swatches (6 presets) and Dark/Light theme toggle.</p>
+
+<!-- ═══════════════════════════════ NEW FEATURES ═══════════════════════════ -->
+
+<!-- ═══════════════════════════════ ENCRYPTED FILES ═══════════════════════════════ -->
+<h2 id="files"><span class="si">&#128228;</span>Encrypted Files</h2>
+<p>Every vault can store files alongside passwords. Files are encrypted with the same AES-256-GCM key derived from your master password — they are never stored in plaintext on disk.</p>
+
+<h3>How It Works</h3>
+<p>Files are stored as entries inside the vault, the same way passwords are. When you upload a file:</p>
+<ol>
+  <li>The file bytes are base64-encoded and added as an entry with <code>entry_type: "file"</code> in the vault JSON.</li>
+  <li>The entire vault (including all file data) is encrypted with AES-256-GCM using the key derived from your master password.</li>
+  <li>Nothing extra is written outside the vault file — no separate folders, no companion files.</li>
+</ol>
+<p>This means backing up or moving your vault file automatically includes all uploaded files. Filenames, sizes, and contents are all encrypted together.</p>
+
+<h3>Uploading Files</h3>
+<ul>
+  <li>Click <strong>Files</strong> in the left sidebar to open the file vault.</li>
+  <li>Drag &amp; drop files onto the drop zone, or click <strong>+ Upload Files</strong> to browse.</li>
+  <li>Multiple files can be uploaded at once. A progress indicator shows the current file.</li>
+  <li>There is no per-file size limit enforced by the application (constrained only by available disk space).</li>
+</ul>
+
+<h3>Downloading Files</h3>
+<p>Click <strong>↙ Download</strong> on any file card. The server decrypts the file in memory and streams it to your browser, which triggers a standard save dialog. The decrypted bytes are never written to the <code>.files/</code> folder.</p>
+
+<h3>Renaming &amp; Deleting</h3>
+<ul>
+  <li><strong>✎ Rename</strong> — updates the filename stored in vault metadata. The <code>.enc</code> file on disk keeps its UUID name.</li>
+  <li><strong>🗑 Delete</strong> — removes the metadata from the vault and deletes the <code>.enc</code> file from disk. This is permanent.</li>
+</ul>
+
+<h3>File Storage Location</h3>
+<p>For a vault stored at <code>C:\Users\you\vault.json</code>, encrypted files live at <code>C:\Users\you\vault.files\&lt;uuid&gt;.enc</code>. If you move or back up your vault, move the <code>.files</code> folder with it.</p>
+
+<div class="tip">
+  <strong>Good candidates for file storage:</strong> SSH keys, certificates, API tokens, seed phrases, important PDFs, scanned ID documents — anything sensitive you want encrypted at rest.
+</div>
+
+<h2 id="new-features"><span class="si">&#10024;</span>What&#8217;s New</h2>
+
+<h3>Password strength on every card</h3>
+<p>Each entry card now shows a small colored dot in the footer — green for strong, yellow for fair, red for weak. Hover the dot to see the exact score and label. Strength is computed locally, never sent anywhere.</p>
+
+<h3>Copy Username from card</h3>
+<p>Alongside the existing <strong>Copy PW</strong> button, each card now shows <strong>Copy UN</strong> to copy the username in one click — no need to open the detail panel.</p>
+
+<h3>Passphrase generator</h3>
+<p>Open the generator modal and click the <strong>Passphrase</strong> tab. Choose 3–8 words from a 500+ word list, pick a separator, and optionally capitalize. A 5-word passphrase gives ~45 bits of entropy — strong enough for most purposes and far easier to remember than a random string.</p>
+
+<h3>Sort by Recently Modified</h3>
+<p>A new <strong>Recently Modified</strong> sort option shows entries you last edited at the top, making it easy to find what you were just working on.</p>
+
+<!-- ═══════════════════════════════ SHORTCUTS ══════════════════════════════ -->
+
+<h2 id="appearance"><span class="si">&#127912;</span>Appearance</h2>
+<p>Open <strong>Settings &#8594; Appearance</strong> to customize the interface.</p>
+<h3>Accent color</h3>
+<p>Six preset colors are available: Purple (default), Blue, Cyan, Green, Orange, and Pink. Click a color swatch to apply it immediately. The choice is saved to <code>localStorage</code> and restored on next launch.</p>
+<h3>Dark / Light mode</h3>
+<p>Click <strong>Toggle Theme</strong> (or the &#9728; sun icon in the top-right toolbar) to switch between dark and light interfaces. The setting is saved and restored on next launch.</p>
+
+<h2 id="shortcuts"><span class="si">&#9000;</span>Keyboard Shortcuts</h2>
+<table>
+  <tr><th>Key</th><th>Action</th></tr>
+  <tr><td><code>Ctrl+N</code></td><td>New entry (opens template picker)</td></tr>
+  <tr><td><code>Ctrl+F</code> / <code>/</code></td><td>Focus search bar</td></tr>
+  <tr><td><code>Ctrl+C</code></td><td>Copy password of the selected entry (when no text is selected)</td></tr>
+  <tr><td><code>Esc</code></td><td>Close current modal / clear search</td></tr>
+  <tr><td><code>Enter</code></td><td>Submit unlock form</td></tr>
+  <tr><td><code>Ctrl+,</code></td><td>Open Settings</td></tr>
+  <tr><td><code>Ctrl+L</code></td><td>Lock vault</td></tr>
+</table>
+
+<!-- ═══════════════════════════════ BEST PRACTICES ═════════════════════════ -->
+<h2 id="best-practices"><span class="si">&#128737;&#65039;</span>Best Practices</h2>
+<h3>Vault password</h3>
+<ul>
+  <li>Use a passphrase of 4–5 random words (e.g. <em>correct-horse-battery-staple</em>) — long, memorable, not guessable.</li>
+  <li>Do not reuse a vault password anywhere else.</li>
+  <li>Write it down and store it physically somewhere only you can access. There is no recovery option.</li>
+</ul>
+<h3>Two-factor authentication</h3>
+<ul>
+  <li>Enable at least one 2FA method and generate backup codes.</li>
+  <li>Print backup codes and keep them with your physical password record — not on the same device.</li>
+  <li>A YubiKey or Windows Hello is the most phishing-resistant option; use it if available.</li>
+</ul>
+<h3>Entry passwords</h3>
+<ul>
+  <li>Use the built-in generator. 20+ characters with mixed character sets is ideal for most sites.</li>
+  <li>Each site gets a unique password — never reuse. The health checker flags reused passwords.</li>
+  <li>Set expiry dates on sensitive accounts (banking, email) to prompt regular rotation.</li>
+</ul>
+<h3>Vault backups</h3>
+<ul>
+  <li>Copy the vault <code>.json</code> file to an external drive or encrypted cloud storage periodically.</li>
+  <li>The vault file is safe to backup — it is encrypted at rest and cannot be read without the master password.</li>
+  <li>Consider using the Shared Vault type pointing to a synced folder for automatic off-machine copies.</li>
+</ul>
+
+<!-- ═══════════════════════════════ TROUBLESHOOTING ════════════════════════ -->
+<h2 id="troubleshooting"><span class="si">&#128295;</span>Troubleshooting</h2>
+
+<h3>Blank screen on launch</h3>
+<p>The local server failed to start (port 7474 in use, or antivirus blocked it). Close any other instance of the app. If the problem persists, check Windows Firewall / antivirus exceptions for <code>Vault.exe</code>.</p>
+
+<h3>"Incorrect vault password"</h3>
+<p>The password is wrong, or the vault file was moved or corrupted. Verify the file path in the vault list (Settings → Data). If the file exists and you are sure the password is correct, the file may be corrupted — restore from a backup copy.</p>
+
+<h3>"Vault already exists, use unlock"</h3>
+<p>You tried to create a vault with a label that already exists. Choose a different label, or go to Settings → Data to remove the old entry first.</p>
+
+<h3>TOTP code rejected</h3>
+<p>TOTP codes are time-based. If your device clock is off by more than 30 seconds, codes will be invalid. Sync your system clock: <em>Settings → Time &amp; Language → Sync now</em>. The app accepts ±1 time step (±30 s).</p>
+
+<h3>Email OTP not arriving</h3>
+<ul>
+  <li>Check spam/junk folder.</li>
+  <li>Verify SMTP settings in Settings → Security → SMTP Configuration. Send a test email.</li>
+  <li>If using Gmail, ensure you used an <strong>app-specific password</strong> (not your account password). Regular passwords are rejected by Google's SMTP.</li>
+  <li>Amazon corporate (<code>@amazon.com</code>) accounts will never work — the tenant has SMTP AUTH disabled. Use a personal Gmail or Outlook account.</li>
+</ul>
+
+<h3>Security key not responding</h3>
+<ul>
+  <li>The app must be accessed at <code>http://localhost:7474</code> (not <code>127.0.0.1</code>) for WebAuthn to work — this is enforced automatically.</li>
+  <li>If the browser prompt does not appear, try clicking "Register Security Key" / "Tap Security Key" again.</li>
+  <li>Windows Hello requires a PIN to be set in Windows Settings before it can be used as a security key.</li>
+  <li>YubiKey on USB: tap the key when the light starts blinking. NFC: hold it near the reader.</li>
+</ul>
+
+<h3>Import not working</h3>
+<p>Ensure your CSV has a header row with at least a <code>title</code> column. Other accepted column names: <code>username</code>, <code>password</code>, <code>url</code>, <code>notes</code>, <code>category</code>. Open the file in a text editor to verify the format.</p>
+
+<h3>PIN not appearing after auto-lock</h3>
+<p>The PIN session only persists within the same app run. If you closed and reopened the app, the PIN is cleared — enter your master password. Set the PIN again after unlocking to restore the quick-unlock for the current session.</p>
+
+<h3>Shared vault not detecting changes</h3>
+<p>The app polls the shared vault file every 5 seconds. If changes made by another user are not appearing, check that: both users are pointing to the same file path, the file system supports <code>mtime</code> timestamps (most do), and neither user's vault is locked (polling is paused when locked).</p>
+
+<h3>Vault merge shows 0 added entries</h3>
+<p>All entries in the source vault matched duplicates in the destination (same title and username). If you expected new entries to come through, check that they have distinct titles or usernames in the source vault before merging again.</p>
+
+<h3>Accent color or theme not saving</h3>
+<p>Settings are stored in browser <code>localStorage</code>. If you clear browser data or run the exe from a different user profile, stored preferences will reset to defaults. Re-apply your preferred color from Settings &#8594; Appearance.</p>
+
+<h3>Slow unlock</h3>
+<p>PBKDF2 with 600,000 rounds takes 0.5–2 seconds depending on hardware. This is intentional — it makes brute-force attacks impractical. If unlock consistently takes more than 5 seconds, your machine may have a hardware issue unrelated to this app.</p>
+
+</main>
+</div>
+</body>
+</html>
