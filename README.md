@@ -1,66 +1,87 @@
+<div align="center">
+
 # Secure Vault
+**Local encrypted vault for passwords and files — no cloud, no accounts, no telemetry**
 
-A local, offline-first password manager and encrypted file vault for Windows. No cloud, no accounts, no telemetry — your data never leaves your machine.
+[![Platform](https://img.shields.io/badge/platform-Windows-0078D4?style=flat-square&logo=windows)](https://github.com/ChrisMangin/secure-vault)
+[![Rust](https://img.shields.io/badge/rust-stable-CE4A00?style=flat-square&logo=rust&logoColor=white)](https://github.com/ChrisMangin/secure-vault)
+[![Latest Release](https://img.shields.io/github/v/release/ChrisMangin/secure-vault?style=flat-square)](https://github.com/ChrisMangin/secure-vault/releases/latest)
+[![License](https://img.shields.io/github/license/ChrisMangin/secure-vault?style=flat-square)](LICENSE)
 
-Built with Rust (Axum backend, embedded frontend via `rust-embed`). Single ~3 MB executable, no installer required.
+<br>
+<img src="docs/screenshots/main.png" alt="Secure Vault — Main View" width="860">
+</div>
 
----
+Secure Vault is a **standalone Windows app** (single ~3 MB exe, no installer) that stores passwords, secure notes, and encrypted files in an AES-256-GCM encrypted vault on your local machine. Everything runs over localhost — nothing leaves your computer.
+
+
+## Screenshots
+
+<table>
+<tr>
+  <td><img src="docs/screenshots/main.png" alt="Main View" width="420"></td>
+  <td><img src="docs/screenshots/unlock.png" alt="Unlock Screen" width="420"></td>
+</tr>
+<tr>
+  <td align="center"><em>Entries grid with strength indicators and quick-copy</em></td>
+  <td align="center"><em>Unlock screen with multi-vault support</em></td>
+</tr>
+<tr>
+  <td><img src="docs/screenshots/files.png" alt="Encrypted Files" width="420"></td>
+  <td><img src="docs/screenshots/generator.png" alt="Password Generator" width="420"></td>
+</tr>
+<tr>
+  <td align="center"><em>Encrypted files stored alongside passwords by category</em></td>
+  <td align="center"><em>Password and passphrase generator with strength meter</em></td>
+</tr>
+</table>
+
 
 ## Features
 
 ### Passwords & Credentials
-- AES-256-GCM encryption with Argon2id key derivation
-- Unlimited vaults — local or shared (network path)
+- **AES-256-GCM** encryption with **Argon2id** key derivation (t=3, m=65536, p=4)
+- Unlimited vaults — local file or shared network path
 - Categories with custom icons and colors
-- Password strength scoring and health dashboard (weak, reused, expiring)
-- Password history (last 5 per entry)
-- TOTP / 2FA code generation built into entries
-- Password generator — random or passphrase mode
-- Drag-and-drop import (CSV, Bitwarden JSON, LastPass CSV)
-- Export to CSV or JSON
+- Password strength scoring on every card + health dashboard (weak, reused, expiring)
+- Password history (last 5 per entry), TOTP/2FA code generation built into entries
+- Password generator — random characters or passphrase (3–8 words, custom separator)
+- Import: CSV (generic, LastPass), Bitwarden JSON — Export: CSV, JSON
 - Vault merge (combine two vaults, skip duplicates)
-- Breach check via Have I Been Pwned (k-anonymity — password never sent)
+- Breach check via Have I Been Pwned (k-anonymity — password never sent in full)
 
 ### Encrypted Files
-- Files stored as encrypted entries inside the vault alongside passwords
-- AES-256-GCM encrypted — same key, same file, same backup
-- Organized by category (store files in "Home", "Work", etc. with your other entries)
-- Upload via topbar button or drag-and-drop
-- Download decrypts in memory — nothing plaintext on disk
-- File type icons auto-detected from MIME type
+- Files stored as entries **inside the vault** alongside passwords — one file to back up
+- Organized by category: store certs, keys, PDFs, and passwords together in "Work", "Home", etc.
+- Upload via topbar button; download decrypts in memory — nothing plaintext on disk
+- Edit file name, category, notes, and favorite flag without touching the encrypted content
+- File type icons auto-detected (images, PDFs, archives, documents, code, etc.)
 
 ### Security
-- Two-factor authentication: TOTP (authenticator app), Email OTP, WebAuthn (security key)
-- Backup codes for TOTP
-- PIN quick-unlock (re-unlock after auto-lock without full password)
-- Auto-lock on inactivity (configurable 5 min – never)
-- Activity log per session
-- Shared vault file locking (safe concurrent access on network shares)
+- **Two-factor authentication**: TOTP (authenticator app), Email OTP, WebAuthn (hardware key)
+- Backup codes, PIN quick-unlock, configurable auto-lock (5 min – never)
+- Activity log per session; shared vault file locking for safe concurrent network access
+- Server binds to `127.0.0.1` only — not reachable from other machines
 
 ### App
-- Single `.exe` — no installer, no dependencies
-- No CMD window (`windows_subsystem = "windows"`)
-- Auto-quits ~10 seconds after closing the browser tab
-- Duplicate instance detection — second launch opens existing session in browser
-- Light / dark mode, custom accent color
-- Keyboard shortcuts throughout
+- Single **`Vault.exe`** — no installer, no dependencies, no CMD window
+- Auto-quits ~10 seconds after closing the browser tab (heartbeat watchdog)
+- Duplicate instance detection — second launch opens the existing session in your browser
+- Light / dark mode, custom accent color, keyboard shortcuts throughout
 
----
 
-## Usage
+## Quick Start
 
-1. Double-click `Vault.exe`
-2. Your default browser opens to `http://127.0.0.1:7474`
-3. Create a vault (first run) or unlock an existing one
-4. Use **Quit** in the sidebar or close the tab (auto-quits in ~10s)
+### Option 1 — Standalone EXE (no Rust needed)
 
-Vault files are stored wherever you choose. Default path is next to the exe. For a shared vault, point multiple machines at the same network path.
+1. Download **`Vault.exe`** from the [latest release](https://github.com/ChrisMangin/secure-vault/releases/latest)
+2. Double-click it — your default browser opens to `http://127.0.0.1:7474`
+3. Click **Add Vault**, choose a save location and master password
+4. Use **Quit** in the sidebar to exit, or just close the tab (auto-quits in ~10s)
 
----
+### Option 2 — Build from Source
 
-## Building from Source
-
-**Prerequisites:** [Rust](https://rustup.rs/) (stable)
+**Prerequisites:** [Rust](https://rustup.rs/) stable toolchain
 
 ```bash
 git clone https://github.com/ChrisMangin/secure-vault
@@ -69,32 +90,34 @@ cargo build --release
 # Output: target/release/Vault.exe
 ```
 
----
-
-## Data & Privacy
-
-- All vault data is encrypted at rest using AES-256-GCM
-- Key derived with Argon2id (t=3, m=65536, p=4) — same parameters as the original Python version, so existing vaults open without migration
-- Server binds to `127.0.0.1` (loopback only) — not accessible from other machines
-- No analytics, no update checks, no network calls except the optional breach check (k-anonymity, opt-in per entry)
-
----
 
 ## Vault File Format
+
+All data lives in a single JSON file:
 
 ```json
 {
   "version": 2,
-  "salt": "<base64 Argon2id salt>",
-  "nonce": "<base64 AES-GCM nonce>",
+  "salt":       "<base64 Argon2id salt>",
+  "nonce":      "<base64 AES-GCM nonce>",
   "ciphertext": "<base64 encrypted payload>"
 }
 ```
 
-The decrypted payload contains `entries`, `categories`, `settings`, and any uploaded file data — all in one file.
+The decrypted payload contains `entries` (passwords + files), `categories`, and `settings` — including any uploaded file data — all encrypted together as one blob.
 
----
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+|---|---|
+| `Ctrl+N` | New entry |
+| `Ctrl+F` | Focus search |
+| `Ctrl+G` | Open password generator |
+| `Escape` | Close panel / modal |
+| `?` | Open user guide |
+
 
 ## License
 
-MIT
+[MIT](LICENSE)
